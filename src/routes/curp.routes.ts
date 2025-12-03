@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { validateCurpController } from "../services/curp.service";
-import { apiKeyMiddleware } from "../middlewares/apikey.middleware";
+import { apiKeyMiddleware } from "../middlewares/apiKey.middleware";
 
 const router = Router();
 
