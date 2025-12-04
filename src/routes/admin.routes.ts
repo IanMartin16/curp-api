@@ -23,9 +23,9 @@ router.get("/stats", (req, res) => {
 
   const lines = raw.split("\n");
   const logs = lines
-    .map((l) => {
+    .map((line) => {
       try {
-        return JSON.parse(l);
+        return JSON.parse(line);
       } catch {
         return null;
       }
@@ -39,10 +39,10 @@ router.get("/stats", (req, res) => {
 
   logs.forEach((l) => {
     const day = String(l.ts).substring(0, 10);
-    const k = l.key || "unknown";
+    const key = l.key || "unknown";
 
     byDay[day] = (byDay[day] || 0) + 1;
-    byKey[k] = (byKey[k] || 0) + 1;
+    byKey[key] = (byKey[key] || 0) + 1;
   });
 
   res.json({ ok: true, total, byDay, byKey });
