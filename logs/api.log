@@ -1,0 +1,4 @@
+{"ts":"2025-12-03T23:52:12.830Z","ip":"::1","key":"no-key","endpoint":"/api/admin/stats","method":"GET","duration":15,"statusCode":403,"success":false,"curp":null}
+{"ts":"2025-12-04T00:00:11.177Z","ip":"::1","key":"no-key","endpoint":"/api/admin/stats","method":"GET","duration":2,"statusCode":403,"success":false,"curp":null}
+{"ts":"2025-12-04T00:00:20.194Z","ip":"::1","key":"no-key","endpoint":"/api/admin/stats","method":"GET","duration":1,"statusCode":403,"success":false,"curp":null}
+{"ts":"2025-12-04T00:01:45.834Z","ip":"::1","key":"supersecreto_123","endpoint":"/api/admin/stats","method":"GET","duration":14,"statusCode":200,"success":true,"curp":null}

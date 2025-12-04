@@ -14,18 +14,18 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
-// Logs para todas las rutas
+// Logs para TODAS las peticiones
 app.use(logsMiddleware);
 
-// Ruta raíz
+// Endpoint raíz para healthcheck
 app.get("/", (_req, res) => {
   res.json({ status: "ok", message: "CURP API running" });
 });
 
-// Rutas protegidas por API key de cliente/master
+// Rutas protegidas de la CURP API (clientes y master)
 app.use("/api/curp", apiKeyMiddleware, curpRouter);
 
-// Rutas de admin SOLO con master key
+// Rutas de admin (SOLO master key)
 app.use("/api/admin", apiKeyMiddleware, adminRouter);
 
 app.listen(PORT, () => {

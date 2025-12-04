@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 
 const CLIENT_KEYS = [
-  // aquí puedes ir poniendo claves para pruebas o clientes
   "cliente_demo_001",
   "cliente_demo_002",
 ];
@@ -21,7 +20,6 @@ export function apiKeyMiddleware(
   }
 
   const masterKey = process.env.MASTER_API_KEY;
-
   const isMaster = masterKey && headerKey === masterKey;
   const isClientKey = CLIENT_KEYS.includes(headerKey);
 
@@ -32,7 +30,6 @@ export function apiKeyMiddleware(
     });
   }
 
-  // podrías setear info del cliente en el request para logs futuros
   (req as any).apiKey = headerKey;
   (req as any).isMasterKey = isMaster;
 
