@@ -5,15 +5,22 @@ import curpRouter from "./routes/curp.routes";
 import adminRouter from "./routes/admin.routes";
 import { apiKeyMiddleware } from "./middlewares/apiKey.middleware";
 import { logsMiddleware } from "./middlewares/logs.middleware";
+import { requestLogger } from "./middlewares/requestLogger";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://curp-web.vercel.app",
+];
+
 app.use(cors());
 app.use(express.json());
-
+app.use(requestLogger);
+app.use(cors({ origin: allowedOrigins, }));
 // Logs para TODAS las peticiones
 app.use(logsMiddleware);
 
