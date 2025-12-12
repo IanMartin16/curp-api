@@ -25,3 +25,5 @@
 {"ts":"2025-12-12T12:59:07.410Z","ip":"::1","key":"no-key","endpoint":"/","method":"GET","duration":18,"statusCode":304,"success":true,"curp":null}
 {"ts":"2025-12-12T15:17:44.433Z","ip":"::1","key":"no-key","endpoint":"/api/admin/keys","method":"GET","duration":13,"statusCode":403,"success":false,"curp":null}
 {"ts":"2025-12-12T15:17:59.514Z","ip":"::1","key":"no-key","endpoint":"/api/admin/keys","method":"GET","duration":3,"statusCode":200,"success":true,"curp":null}
+{"ts":"2025-12-12T18:04:57.316Z","ip":"::1","key":"no-key","endpoint":"/","method":"GET","duration":17,"statusCode":304,"success":true,"curp":null}
+{"ts":"2025-12-12T20:19:15.138Z","ip":"::1","key":"no-key","endpoint":"/","method":"GET","duration":44,"statusCode":304,"success":true,"curp":null}

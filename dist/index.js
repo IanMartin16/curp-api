@@ -8,7 +8,7 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const curp_routes_1 = __importDefault(require("./routes/curp.routes"));
 const admin_routes_1 = __importDefault(require("./routes/admin.routes"));
-const apiKey_middleware_1 = require("./middlewares/apiKey.middleware");
+const apikey_middleware_1 = require("./middlewares/apikey.middleware");
 const logs_middleware_1 = require("./middlewares/logs.middleware");
 const requestLogger_1 = require("./middlewares/requestLogger");
 dotenv_1.default.config();
@@ -29,7 +29,7 @@ app.get("/", (_req, res) => {
 // 🔐 Rutas de admin (solo ADMIN_API_KEY, NO apiKeyMiddleware aquí)
 app.use("/api/admin", admin_routes_1.default);
 // 🔑 Rutas públicas de CURP (aquí sí aplicamos apiKeyMiddleware)
-app.use("/api/curp", apiKey_middleware_1.apiKeyMiddleware, curp_routes_1.default);
+app.use("/api/curp", apikey_middleware_1.apiKeyMiddleware, curp_routes_1.default);
 app.listen(PORT, () => {
     console.log(`Servidor escuchando en puerto ${PORT}`);
 });
