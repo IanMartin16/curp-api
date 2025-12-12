@@ -1,4 +1,3 @@
-// src/index.ts
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -18,10 +17,9 @@ const allowedOrigins = [
   "https://curp-web.vercel.app",
 ];
 
-app.use(cors());
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 app.use(requestLogger);
-app.use(cors({ origin: allowedOrigins }));
 app.use(logsMiddleware);
 
 // Healthcheck
@@ -29,10 +27,10 @@ app.get("/", (_req, res) => {
   res.json({ status: "ok", message: "CURP API running" });
 });
 
-// 🔐 RUTAS DE ADMIN PRIMERO y con prefijo específico
+// 🔐 Rutas de admin (solo ADMIN_API_KEY, NO apiKeyMiddleware aquí)
 app.use("/api/admin", adminRouter);
 
-// 🔑 RUTAS PÚBLICAS DE CURP
+// 🔑 Rutas públicas de CURP (aquí sí aplicamos apiKeyMiddleware)
 app.use("/api/curp", apiKeyMiddleware, curpRouter);
 
 app.listen(PORT, () => {
