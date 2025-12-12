@@ -11,3 +11,5 @@
 {"timestamp":"2025-12-12T12:59:07.407Z","method":"GET","path":"/","statusCode":304,"durationMs":16,"ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36","errorMessage":null}
 {"timestamp":"2025-12-12T15:17:44.430Z","method":"GET","path":"/api/admin/keys","statusCode":403,"durationMs":10,"ip":"::1","userAgent":"PostmanRuntime/7.49.1","errorMessage":"Forbidden"}
 {"timestamp":"2025-12-12T15:17:59.514Z","method":"GET","path":"/api/admin/keys","statusCode":200,"durationMs":3,"ip":"::1","userAgent":"PostmanRuntime/7.49.1","errorMessage":null}
+{"timestamp":"2025-12-12T18:04:57.313Z","method":"GET","path":"/","statusCode":304,"durationMs":15,"ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36","errorMessage":null}
+{"timestamp":"2025-12-12T20:19:15.127Z","method":"GET","path":"/","statusCode":304,"durationMs":33,"ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36","errorMessage":null}
