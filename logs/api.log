@@ -22,3 +22,4 @@
 {"ts":"2025-12-12T04:15:42.541Z","ip":"::1","key":"no-key","endpoint":"/api/admin/keys","method":"GET","duration":13,"statusCode":403,"success":false,"curp":"HECM740516HDFRSR08"}
 {"ts":"2025-12-12T04:16:47.499Z","ip":"::1","key":"no-key","endpoint":"/api/admin/keys","method":"GET","duration":71,"statusCode":403,"success":false,"curp":"HECM740516HDFRSR08"}
 {"ts":"2025-12-12T04:19:14.098Z","ip":"::1","key":"no-key","endpoint":"/api/admin/keys","method":"GET","duration":4,"statusCode":200,"success":true,"curp":"HECM740516HDFRSR08"}
+{"ts":"2025-12-12T12:59:07.410Z","ip":"::1","key":"no-key","endpoint":"/","method":"GET","duration":18,"statusCode":304,"success":true,"curp":null}
