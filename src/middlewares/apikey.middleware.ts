@@ -7,7 +7,7 @@ export function apiKeyMiddleware(
   res: Response,
   next: NextFunction
 ) {
-  const headerKey = req.header("x-admin-key");
+  const headerKey = req.header("x-api-key");
 
   if (!headerKey) {
     return res.status(401).json({
