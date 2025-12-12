@@ -1,0 +1,10 @@
+[
+  {
+    "id": "key_demo_001",
+    "key": "cliente_demo_001",
+    "label": "Demo pública",
+    "plan": "free",
+    "active": true,
+    "createdAt": "2025-01-01T00:00:00.000Z"
+  }
+]

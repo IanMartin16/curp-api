@@ -1,0 +1,2 @@
+{"timestamp":"2025-12-09T20:07:23.854Z","method":"GET","path":"/","statusCode":200,"durationMs":19,"ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36","errorMessage":null}
+{"timestamp":"2025-12-09T20:07:24.106Z","method":"GET","path":"/favicon.ico","statusCode":404,"durationMs":12,"ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36","errorMessage":"Not Found"}

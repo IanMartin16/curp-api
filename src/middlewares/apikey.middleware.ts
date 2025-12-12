@@ -1,9 +1,6 @@
 import { Request, Response, NextFunction } from "express";
+import { loadApiKeys } from "../store/apiKeys.store";
 
-const CLIENT_KEYS = [
-  "cliente_demo_001",
-  "cliente_demo_002",
-];
 
 export function apiKeyMiddleware(
   req: Request,
@@ -21,7 +18,9 @@ export function apiKeyMiddleware(
 
   const masterKey = process.env.MASTER_API_KEY;
   const isMaster = masterKey && headerKey === masterKey;
-  const isClientKey = CLIENT_KEYS.includes(headerKey);
+
+  const keys = loadApiKeys().filter((k) => k.active);
+  const isClientKey = keys.some((k) => k.key === headerKey);
 
   if (!isMaster && !isClientKey) {
     return res.status(403).json({

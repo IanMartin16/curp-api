@@ -2,3 +2,15 @@
 {"ts":"2025-12-04T00:00:11.177Z","ip":"::1","key":"no-key","endpoint":"/api/admin/stats","method":"GET","duration":2,"statusCode":403,"success":false,"curp":null}
 {"ts":"2025-12-04T00:00:20.194Z","ip":"::1","key":"no-key","endpoint":"/api/admin/stats","method":"GET","duration":1,"statusCode":403,"success":false,"curp":null}
 {"ts":"2025-12-04T00:01:45.834Z","ip":"::1","key":"supersecreto_123","endpoint":"/api/admin/stats","method":"GET","duration":14,"statusCode":200,"success":true,"curp":null}
+{"ts":"2025-12-04T23:36:50.989Z","ip":"::1","key":"no-key","endpoint":"/","method":"GET","duration":18,"statusCode":200,"success":true,"curp":null}
+{"ts":"2025-12-04T23:36:51.186Z","ip":"::1","key":"no-key","endpoint":"/favicon.ico","method":"GET","duration":8,"statusCode":404,"success":false,"curp":null}
+{"ts":"2025-12-05T15:30:51.027Z","ip":"::1","key":"no-key","endpoint":"/","method":"GET","duration":18,"statusCode":200,"success":true,"curp":null}
+{"ts":"2025-12-05T15:30:51.662Z","ip":"::1","key":"no-key","endpoint":"/favicon.ico","method":"GET","duration":7,"statusCode":404,"success":false,"curp":null}
+{"ts":"2025-12-05T20:01:01.289Z","ip":"::1","key":"no-key","endpoint":"/","method":"GET","duration":55,"statusCode":200,"success":true,"curp":null}
+{"ts":"2025-12-09T20:07:23.857Z","ip":"::1","key":"no-key","endpoint":"/","method":"GET","duration":22,"statusCode":200,"success":true,"curp":null}
+{"ts":"2025-12-09T20:07:24.107Z","ip":"::1","key":"no-key","endpoint":"/favicon.ico","method":"GET","duration":13,"statusCode":404,"success":false,"curp":null}
+{"ts":"2025-12-10T00:57:47.374Z","ip":"::1","key":"no-key","endpoint":"/","method":"GET","duration":19,"statusCode":304,"success":true,"curp":null}
+{"ts":"2025-12-11T02:52:58.379Z","ip":"::1","key":"no-key","endpoint":"/","method":"GET","duration":391,"statusCode":200,"success":true,"curp":null}
+{"ts":"2025-12-11T02:52:58.812Z","ip":"::1","key":"no-key","endpoint":"/favicon.ico","method":"GET","duration":60,"statusCode":404,"success":false,"curp":null}
+{"ts":"2025-12-12T02:28:56.032Z","ip":"::1","key":"no-key","endpoint":"/","method":"GET","duration":102,"statusCode":200,"success":true,"curp":null}
+{"ts":"2025-12-12T02:28:56.851Z","ip":"::1","key":"no-key","endpoint":"/favicon.ico","method":"GET","duration":9,"statusCode":404,"success":false,"curp":null}
