@@ -1,2 +1,10 @@
 {"timestamp":"2025-12-12T02:28:56.030Z","method":"GET","path":"/","statusCode":200,"durationMs":101,"ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36","errorMessage":null}
 {"timestamp":"2025-12-12T02:28:56.851Z","method":"GET","path":"/favicon.ico","statusCode":404,"durationMs":9,"ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36","errorMessage":"Not Found"}
+{"timestamp":"2025-12-12T03:46:04.989Z","method":"GET","path":"/api/admin/keys","statusCode":403,"durationMs":13,"ip":"::1","userAgent":"PostmanRuntime/7.49.1","errorMessage":"Forbidden"}
+{"timestamp":"2025-12-12T03:59:28.759Z","method":"GET","path":"/api/admin/keys","statusCode":403,"durationMs":12,"ip":"::1","userAgent":"PostmanRuntime/7.49.1","errorMessage":"Forbidden"}
+{"timestamp":"2025-12-12T04:08:37.832Z","method":"GET","path":"/api/admin/keys","statusCode":403,"durationMs":19,"ip":"::1","userAgent":"PostmanRuntime/7.49.1","errorMessage":"Forbidden"}
+{"timestamp":"2025-12-12T04:08:42.555Z","method":"GET","path":"/api/admin/keys","statusCode":403,"durationMs":3,"ip":"::1","userAgent":"PostmanRuntime/7.49.1","errorMessage":"Forbidden"}
+{"timestamp":"2025-12-12T04:11:18.909Z","method":"GET","path":"/api/admin/keys","statusCode":403,"durationMs":1,"ip":"::1","userAgent":"PostmanRuntime/7.49.1","errorMessage":"Forbidden"}
+{"timestamp":"2025-12-12T04:15:42.537Z","method":"GET","path":"/api/admin/keys","statusCode":403,"durationMs":10,"ip":"::1","userAgent":"PostmanRuntime/7.49.1","errorMessage":"Forbidden"}
+{"timestamp":"2025-12-12T04:16:47.447Z","method":"GET","path":"/api/admin/keys","statusCode":403,"durationMs":19,"ip":"::1","userAgent":"PostmanRuntime/7.49.1","errorMessage":"Forbidden"}
+{"timestamp":"2025-12-12T04:19:14.098Z","method":"GET","path":"/api/admin/keys","statusCode":200,"durationMs":4,"ip":"::1","userAgent":"PostmanRuntime/7.49.1","errorMessage":null}

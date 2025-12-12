@@ -11,7 +11,6 @@ export function adminMiddleware(req: Request, res: Response, next: NextFunction)
   }
 
   const adminKey = process.env.ADMIN_API_KEY;
-
   if (!adminKey || headerKey !== adminKey) {
     return res.status(403).json({
       ok: false,
