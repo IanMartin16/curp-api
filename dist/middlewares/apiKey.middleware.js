@@ -1,10 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.apiKeyMiddleware = apiKeyMiddleware;
-const CLIENT_KEYS = [
-    "cliente_demo_001",
-    "cliente_demo_002",
-];
+const apiKeys_store_1 = require("../store/apiKeys.store");
 function apiKeyMiddleware(req, res, next) {
     const headerKey = req.header("x-api-key");
     if (!headerKey) {
@@ -15,7 +12,8 @@ function apiKeyMiddleware(req, res, next) {
     }
     const masterKey = process.env.MASTER_API_KEY;
     const isMaster = masterKey && headerKey === masterKey;
-    const isClientKey = CLIENT_KEYS.includes(headerKey);
+    const keys = (0, apiKeys_store_1.loadApiKeys)().filter((k) => k.active);
+    const isClientKey = keys.some((k) => k.key === headerKey);
     if (!isMaster && !isClientKey) {
         return res.status(403).json({
             ok: false,

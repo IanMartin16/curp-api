@@ -4,10 +4,12 @@
   "main": "dist/index.js",
   "license": "MIT",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "build": "tsc || echo \"tsc terminó con errores pero se generó salida\"",
-    "start": "node dist/index.js"
-  },
+  "postinstall": "npm run build",
+  "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+  "clean": "rimraf dist",
+  "build": "npm run clean && tsc",
+  "start": "node dist/index.js"
+},
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -16,8 +18,8 @@
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^22.7.4",
+    "rimraf": "^6.1.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.6.3"
   }
 }
-
