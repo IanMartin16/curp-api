@@ -31,7 +31,7 @@ app.get("/", (_req, res) => {
 app.use("/api/admin", adminRouter);
 
 // 🔑 Rutas públicas de CURP (aquí sí aplicamos apiKeyMiddleware)
-app.use("/api/curp", apiKeyMiddleware, curpRouter);
+app.use("//api/curp", apiKeyMiddleware, curpRouter);
 
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
