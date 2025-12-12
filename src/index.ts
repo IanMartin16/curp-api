@@ -30,10 +30,10 @@ app.get("/", (_req, res) => {
 });
 
 // Rutas protegidas de la CURP API (clientes y master)
-app.use("/api/curp", apiKeyMiddleware, curpRouter);
+app.use("//curp", apiKeyMiddleware, curpRouter);
 
 // Rutas de admin (SOLO master key)
-app.use("/api/admin", apiKeyMiddleware, adminRouter);
+app.use("/api/admin", adminRouter);
 
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en puerto ${PORT}`);
