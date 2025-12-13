@@ -2,6 +2,7 @@ import { Router } from "express";
 import fs from "fs";
 import path from "path";
 import { adminMiddleware } from "../middlewares/admin.middleware"; // el que valida ADMIN_API_KEY
+import { apiKeyMiddleware } from "../middlewares/apikey.middleware";
 import {
   loadApiKeys,
   saveApiKeys,
@@ -78,7 +79,7 @@ router.post("/keys/revoke", adminMiddleware, (req, res) => {
   return res.json({ ok: true, key: all[idx] });
 });
 
-router.get("/stats", (req, res) => {
+router.get("/stats", apiKeyMiddleware, (req, res) => {
   const master = (req as any).isMasterKey;
   if (!master) {
     return res.status(403).json({ ok: false, error: "Solo master key" });
