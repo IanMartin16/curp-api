@@ -79,12 +79,7 @@ router.post("/keys/revoke", adminMiddleware, (req, res) => {
   return res.json({ ok: true, key: all[idx] });
 });
 
-router.get("/stats", apiKeyMiddleware, (req, res) => {
-  const master = (req as any).isMasterKey;
-  if (!master) {
-    return res.status(403).json({ ok: false, error: "Solo master key" });
-  }
-
+router.get("/stats", adminMiddleware, (req, res) => {
   const filePath = path.join(__dirname, "../../logs/api.log");
 
   if (!fs.existsSync(filePath)) {
@@ -99,28 +94,22 @@ router.get("/stats", apiKeyMiddleware, (req, res) => {
   const lines = raw.split("\n");
   const logs = lines
     .map((line) => {
-      try {
-        return JSON.parse(line);
-      } catch {
-        return null;
-      }
+      try { return JSON.parse(line); } catch { return null; }
     })
     .filter(Boolean) as any[];
 
   const total = logs.length;
-
   const byDay: Record<string, number> = {};
   const byKey: Record<string, number> = {};
 
   logs.forEach((l) => {
     const day = String(l.ts).substring(0, 10);
     const key = l.key || "unknown";
-
     byDay[day] = (byDay[day] || 0) + 1;
     byKey[key] = (byKey[key] || 0) + 1;
   });
 
-  res.json({ ok: true, total, byDay, byKey });
+  return res.json({ ok: true, total, byDay, byKey });
 });
 
 export default router;
