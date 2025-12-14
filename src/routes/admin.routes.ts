@@ -106,38 +106,26 @@ router.get("/stats", adminMiddleware, async (req, res) => {
 
     // ✅ DEMO stats (hoy)
     // api_usage_daily guarda llaves tipo: demo_<hash>
+    // ✅ DEMO stats (hoy) usando demo_usage
     let demoUsedToday = 0;
     let demoUniqueToday = 0;
 
-    try {
-      const demoTodayR = await pool.query(`
-        SELECT COALESCE(SUM(used),0)::int AS total
-        FROM api_usage_daily
-        WHERE day = CURRENT_DATE AND api_key LIKE 'demo_%'
-      `);
+      try {
+        const demoR = await pool.query(`
+         SELECT
+           COALESCE(SUM(used),0)::int AS used_today,
+           COUNT(*)::int AS unique_today
+         FROM demo_usage
+         WHERE day = CURRENT_DATE
+        `);
 
-      const demoUniqueR = await pool.query(`
-        SELECT COUNT(*)::int AS unique
-        FROM api_usage_daily
-        WHERE day = CURRENT_DATE AND api_key LIKE 'demo_%'
-      `);
+        demoUsedToday = demoR.rows?.[0]?.used_today ?? 0;
+        demoUniqueToday = demoR.rows?.[0]?.unique_today ?? 0;
+      } catch {
+        demoUsedToday = 0;
+        demoUniqueToday = 0;
+      }
 
-      demoUsedToday = demoTodayR.rows?.[0]?.total ?? 0;
-      demoUniqueToday = demoUniqueR.rows?.[0]?.unique ?? 0;
-    } catch {
-      // si la tabla no existe aún en algún ambiente, no rompas el dashboard
-      demoUsedToday = 0;
-      demoUniqueToday = 0;
-    }
-
-      const demoR = await pool.query(`
-       SELECT
-       COUNT(*)::int AS used_today,
-       COUNT(DISTINCT ip)::int AS unique_today
-       FROM api_logs
-       WHERE date_trunc('day', ts) = date_trunc('day', now())
-       AND COALESCE(NULLIF(api_key, ''), 'no-key') = 'no-key'
-      `);
 
     return res.json({ ok: true, total, byDay, byKey, demoUsedToday, demoUniqueToday });
   } catch (e: any) {

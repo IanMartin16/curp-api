@@ -20,6 +20,7 @@ async function bootstrap() {
   await initDb();
 
   const app = express();
+  app.set("trust proxy", 1);
   const PORT = process.env.PORT || 4000;
 
   const allowedOrigins = [
