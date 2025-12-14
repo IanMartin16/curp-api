@@ -1,38 +1,58 @@
+import "./env";
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+//import dotenv from "dotenv";
+
 import curpRouter from "./routes/curp.routes";
 import adminRouter from "./routes/admin.routes";
+
 import { apiKeyMiddleware } from "./middlewares/apikey.middleware";
 import { logsMiddleware } from "./middlewares/logs.middleware";
 import { requestLogger } from "./middlewares/requestLogger";
+import { rateLimitMiddleware } from "./middlewares/rateLimit.middleware";
 
-dotenv.config();
+import { initDb } from "./db/initDb";
 
-const app = express();
-const PORT = process.env.PORT || 4000;
+//dotenv.config();
 
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://curp-web.vercel.app",
-];
+async function bootstrap() {
+  // ✅ Una sola migración (initDb ya crea api_keys, api_logs, api_usage)
+  await initDb();
 
-app.use(cors({ origin: allowedOrigins }));
-app.use(express.json());
-app.use(requestLogger);
-app.use(logsMiddleware);
+  const app = express();
+  const PORT = process.env.PORT || 4000;
 
-// Healthcheck
-app.get("/", (_req, res) => {
-  res.json({ status: "ok", message: "CURP API running" });
-});
+  const allowedOrigins = [
+    "http://localhost:3000",
+    "https://curp-web.vercel.app",
+  ];
 
-// 🔐 Rutas de admin (solo ADMIN_API_KEY, NO apiKeyMiddleware aquí)
-app.use("/api/admin", adminRouter);
+  app.use(cors({ origin: allowedOrigins }));
+  app.use(express.json());
 
-// 🔑 Rutas públicas de CURP (aquí sí aplicamos apiKeyMiddleware)
-app.use("/api/curp", apiKeyMiddleware, curpRouter);
+  // (Opcional) requestLogger para debug
+  app.use(requestLogger);
 
-app.listen(PORT, () => {
-  console.log(`Servidor escuchando en puerto ${PORT}`);
+  // Healthcheck
+  app.get("/", (_req, res) => {
+    res.json({ status: "ok", message: "CURP API running" });
+  });
+
+  // 🔐 ADMIN primero (sin logs ni rate limit)
+  app.use("/api/admin", adminRouter);
+
+  // 🧾 Logs solo para lo demás (principalmente /api/curp)
+  app.use(logsMiddleware);
+
+  // 🔑 CURP protegido + rate limit
+  app.use("/api/curp", apiKeyMiddleware, rateLimitMiddleware, curpRouter);
+
+  app.listen(PORT, () => {
+    console.log(`Servidor escuchando en puerto ${PORT}`);
+  });
+}
+
+bootstrap().catch((e) => {
+  console.error("Boot error:", e);
+  process.exit(1);
 });

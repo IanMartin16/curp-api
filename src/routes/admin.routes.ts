@@ -1,115 +1,113 @@
 import { Router } from "express";
-import fs from "fs";
-import path from "path";
-import { adminMiddleware } from "../middlewares/admin.middleware"; // el que valida ADMIN_API_KEY
-import { apiKeyMiddleware } from "../middlewares/apikey.middleware";
+import { adminMiddleware } from "../middlewares/admin.middleware";
 import {
   loadApiKeys,
-  saveApiKeys,
-  generateRandomKey,
-  ApiKeyRecord,
+  createApiKey,
+  revokeApiKey,
   PlanType,
 } from "../store/apiKeys.store";
+import { pool } from "../db";
 
 const router = Router();
 
-router.get("/keys", adminMiddleware, (req, res) => {
-  const keys = loadApiKeys();
+router.get("/keys", adminMiddleware, async (req, res) => {
+  try {
+    const keys = await loadApiKeys();
 
-  // podrías ocultar parte de la key si quieres
-  const safeKeys = keys.map((k) => ({
-    id: k.id,
-    key: k.key,
-    label: k.label,
-    plan: k.plan,
-    active: k.active,
-    createdAt: k.createdAt,
-    revokedAt: k.revokedAt ?? null,
-  }));
+    const safeKeys = keys.map((k) => ({
+      id: k.id,
+      key: k.key,
+      label: k.label,
+      plan: k.plan,
+      active: k.active,
+      createdAt: k.createdAt,
+      revokedAt: k.revokedAt ?? null,
+    }));
 
-  return res.json({ ok: true, keys: safeKeys });
+    return res.json({ ok: true, keys: safeKeys });
+  } catch (e: any) {
+    return res.status(500).json({ ok: false, error: e?.message || "Error" });
+  }
 });
 
-router.post("/keys", adminMiddleware, (req, res) => {
-  const { label, plan } = req.body as {
-    label?: string;
-    plan?: PlanType;
-  };
+router.post("/keys", adminMiddleware, async (req, res) => {
+  try {
+    const { label, plan } = req.body as { label?: string; plan?: PlanType };
 
-  const all = loadApiKeys();
-  const newKey: ApiKeyRecord = {
-    id: `key_${all.length + 1}`,
-    key: generateRandomKey(),
-    label: label || `API key #${all.length + 1}`,
-    plan: plan && ["free", "developer", "business"].includes(plan)
-      ? plan
-      : "free",
-    active: true,
-    createdAt: new Date().toISOString(),
-  };
+    const cleanPlan: PlanType =
+      plan && ["free", "developer", "business"].includes(plan) ? plan : "free";
 
-  all.push(newKey);
-  saveApiKeys(all);
+    const newKey = await createApiKey({
+      label: label?.trim() || undefined,
+      plan: cleanPlan,
+    });
 
-  return res.status(201).json({
-    ok: true,
-    key: newKey,
-  });
+    return res.status(201).json({
+      ok: true,
+      key: newKey,
+    });
+  } catch (e: any) {
+    return res.status(500).json({ ok: false, error: e?.message || "Error" });
+  }
 });
 
 // POST /api/admin/keys/revoke  -> revoca una key por id
-router.post("/keys/revoke", adminMiddleware, (req, res) => {
-  const { id } = req.body as { id?: string };
+router.post("/keys/revoke", adminMiddleware, async (req, res) => {
+  try {
+    const { id } = req.body as { id?: string };
 
-  if (!id) {
-    return res.status(400).json({ ok: false, error: "Falta id de la key" });
+    if (!id) {
+      return res.status(400).json({ ok: false, error: "Falta id de la key" });
+    }
+
+    const ok = await revokeApiKey(id);
+
+    if (!ok) {
+      return res.status(404).json({ ok: false, error: "Key no encontrada" });
+    }
+
+    return res.json({ ok: true });
+  } catch (e: any) {
+    return res.status(500).json({ ok: false, error: e?.message || "Error" });
   }
-
-  const all = loadApiKeys();
-  const idx = all.findIndex((k) => k.id === id);
-
-  if (idx === -1) {
-    return res.status(404).json({ ok: false, error: "Key no encontrada" });
-  }
-
-  all[idx].active = false;
-  all[idx].revokedAt = new Date().toISOString();
-  saveApiKeys(all);
-
-  return res.json({ ok: true, key: all[idx] });
 });
 
-router.get("/stats", adminMiddleware, (req, res) => {
-  const filePath = path.join(__dirname, "../../logs/api.log");
+router.get("/stats", adminMiddleware, async (req, res) => {
+  try {
+    // total
+    const totalR = await pool.query(`SELECT COUNT(*)::int AS total FROM api_logs`);
+    const total = totalR.rows?.[0]?.total ?? 0;
 
-  if (!fs.existsSync(filePath)) {
-    return res.json({ ok: true, total: 0, byDay: {}, byKey: {} });
+    // byDay (YYYY-MM-DD)
+    const byDayR = await pool.query(`
+      SELECT to_char(date_trunc('day', ts), 'YYYY-MM-DD') AS day, COUNT(*)::int AS c
+      FROM api_logs
+      GROUP BY 1
+      ORDER BY 1 ASC
+    `);
+
+    const byDay: Record<string, number> = {};
+    for (const row of byDayR.rows) {
+      byDay[row.day] = row.c;
+    }
+
+    // byKey
+    const byKeyR = await pool.query(`
+      SELECT COALESCE(NULLIF(api_key, ''), 'no-key') AS k, COUNT(*)::int AS c
+      FROM api_logs
+      GROUP BY 1
+      ORDER BY c DESC
+    `);
+
+    const byKey: Record<string, number> = {};
+    for (const row of byKeyR.rows) {
+      byKey[row.k] = row.c;
+    }
+
+    return res.json({ ok: true, total, byDay, byKey });
+  } catch (e: any) {
+    return res.status(500).json({ ok: false, error: e?.message || "Error" });
   }
-
-  const raw = fs.readFileSync(filePath, "utf8").trim();
-  if (!raw) {
-    return res.json({ ok: true, total: 0, byDay: {}, byKey: {} });
-  }
-
-  const lines = raw.split("\n");
-  const logs = lines
-    .map((line) => {
-      try { return JSON.parse(line); } catch { return null; }
-    })
-    .filter(Boolean) as any[];
-
-  const total = logs.length;
-  const byDay: Record<string, number> = {};
-  const byKey: Record<string, number> = {};
-
-  logs.forEach((l) => {
-    const day = String(l.ts).substring(0, 10);
-    const key = l.key || "unknown";
-    byDay[day] = (byDay[day] || 0) + 1;
-    byKey[key] = (byKey[key] || 0) + 1;
-  });
-
-  return res.json({ ok: true, total, byDay, byKey });
 });
 
 export default router;
