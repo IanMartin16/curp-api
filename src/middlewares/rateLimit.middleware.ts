@@ -3,8 +3,8 @@ import { pool } from "../db";
 
 const LIMITS = {
   free: 500,
-  developer: 50_000,
-  business: 500_000,
+  developer: 10_000,
+  business: 50_000,
 } as const;
 
 type Plan = keyof typeof LIMITS;
@@ -12,24 +12,71 @@ type Plan = keyof typeof LIMITS;
 function monthKey(d = new Date()) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
-  return `${y}-${m}`; // ej: 2025-12
+  return `${y}-${m}`;
+}
+
+function dayKey(d = new Date()) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 export async function rateLimitMiddleware(req: Request, res: Response, next: NextFunction) {
   try {
-    const key = (req as any).apiKey as string | undefined;
     const isMaster = Boolean((req as any).isMasterKey);
-
-    // master no limita
     if (isMaster) return next();
+
+    // ✅ DEMO MODE (sin api key)
+    const isDemo = Boolean((req as any).isDemo);
+    if (isDemo) {
+      const demoId = String((req as any).demoId || "");
+      if (!demoId) return res.status(500).json({ ok: false, error: "demoId faltante" });
+
+      const limit = 5;
+      const day = dayKey();
+
+      const incR = await pool.query(
+        `
+        WITH upsert AS (
+          INSERT INTO demo_usage (demo_id, day, used)
+          VALUES ($1, $2::date, 1)
+          ON CONFLICT (demo_id, day) DO UPDATE
+            SET used = demo_usage.used + 1,
+                updated_at = now()
+          WHERE demo_usage.used < $3
+          RETURNING used
+        )
+        SELECT used FROM upsert
+        `,
+        [demoId, day, limit]
+      );
+
+      if (incR.rowCount === 0) {
+        const curR = await pool.query(
+          `SELECT used FROM demo_usage WHERE demo_id = $1 AND day = $2::date LIMIT 1`,
+          [demoId, day]
+        );
+        const usedNow = curR.rowCount ? Number(curR.rows[0].used) : limit;
+
+        return res.status(429).json({
+          ok: false,
+          error: "Límite demo excedido (5 por día)",
+          limit,
+          used: usedNow,
+          day,
+        });
+      }
+
+      return next();
+    }
+
+    // 🔑 NORMAL (con api key)
+    const key = (req as any).apiKey as string | undefined;
     if (!key) return res.status(401).json({ ok: false, error: "Falta apiKey en request" });
 
-    // 1) obtener plan desde api_keys
     const planR = await pool.query(
-      `SELECT plan
-       FROM api_keys
-       WHERE active = true AND key = $1
-       LIMIT 1`,
+      `SELECT plan FROM api_keys WHERE active = true AND key = $1 LIMIT 1`,
       [key]
     );
 
@@ -39,12 +86,8 @@ export async function rateLimitMiddleware(req: Request, res: Response, next: Nex
 
     const plan = (String(planR.rows[0].plan || "free") as Plan) || "free";
     const limit = LIMITS[plan] ?? LIMITS.free;
-
     const m = monthKey();
 
-    // 2) incrementar uso (si ya llegó al límite, NO incrementa)
-    //    - si regresa row, se incrementó y te da el used nuevo
-    //    - si no regresa row, ya está en límite
     const incR = await pool.query(
       `
       WITH upsert AS (
@@ -61,7 +104,6 @@ export async function rateLimitMiddleware(req: Request, res: Response, next: Nex
     );
 
     if (incR.rowCount === 0) {
-      // obtener used actual para responder bonito
       const curR = await pool.query(
         `SELECT used FROM api_usage WHERE api_key = $1 AND month = $2 LIMIT 1`,
         [key, m]
@@ -78,7 +120,6 @@ export async function rateLimitMiddleware(req: Request, res: Response, next: Nex
       });
     }
 
-    // ok, incrementado
     return next();
   } catch (e: any) {
     return res.status(500).json({ ok: false, error: e?.message || "Error" });

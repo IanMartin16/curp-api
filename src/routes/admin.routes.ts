@@ -104,7 +104,42 @@ router.get("/stats", adminMiddleware, async (req, res) => {
       byKey[row.k] = row.c;
     }
 
-    return res.json({ ok: true, total, byDay, byKey });
+    // ✅ DEMO stats (hoy)
+    // api_usage_daily guarda llaves tipo: demo_<hash>
+    let demoUsedToday = 0;
+    let demoUniqueToday = 0;
+
+    try {
+      const demoTodayR = await pool.query(`
+        SELECT COALESCE(SUM(used),0)::int AS total
+        FROM api_usage_daily
+        WHERE day = CURRENT_DATE AND api_key LIKE 'demo_%'
+      `);
+
+      const demoUniqueR = await pool.query(`
+        SELECT COUNT(*)::int AS unique
+        FROM api_usage_daily
+        WHERE day = CURRENT_DATE AND api_key LIKE 'demo_%'
+      `);
+
+      demoUsedToday = demoTodayR.rows?.[0]?.total ?? 0;
+      demoUniqueToday = demoUniqueR.rows?.[0]?.unique ?? 0;
+    } catch {
+      // si la tabla no existe aún en algún ambiente, no rompas el dashboard
+      demoUsedToday = 0;
+      demoUniqueToday = 0;
+    }
+
+      const demoR = await pool.query(`
+       SELECT
+       COUNT(*)::int AS used_today,
+       COUNT(DISTINCT ip)::int AS unique_today
+       FROM api_logs
+       WHERE date_trunc('day', ts) = date_trunc('day', now())
+       AND COALESCE(NULLIF(api_key, ''), 'no-key') = 'no-key'
+      `);
+
+    return res.json({ ok: true, total, byDay, byKey, demoUsedToday, demoUniqueToday });
   } catch (e: any) {
     return res.status(500).json({ ok: false, error: e?.message || "Error" });
   }

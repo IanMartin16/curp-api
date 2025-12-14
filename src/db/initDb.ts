@@ -37,6 +37,28 @@ export async function initDb() {
     );
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS api_usage_daily (
+     id BIGSERIAL PRIMARY KEY,
+     api_key TEXT NOT NULL,
+     day DATE NOT NULL DEFAULT CURRENT_DATE,
+     used INT NOT NULL DEFAULT 0,
+     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+     UNIQUE (api_key, day)
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS demo_usage (
+     demo_id TEXT NOT NULL,
+     day DATE NOT NULL,
+     used INT NOT NULL DEFAULT 0,
+     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+     PRIMARY KEY (demo_id, day)
+    );
+  `)
+
   // índices opcionales (mejor rendimiento en dashboard)
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_api_logs_ts ON api_logs(ts);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_api_logs_key ON api_logs(api_key);`);
