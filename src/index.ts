@@ -26,6 +26,8 @@ async function bootstrap() {
   const allowedOrigins = [
     "http://localhost:3000",
     "https://curp-web.vercel.app",
+    "https://curpify.com",
+    "https://www.curpify.com",
   ];
 
   app.use(cors({ origin: allowedOrigins }));
