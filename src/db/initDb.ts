@@ -58,6 +58,14 @@ export async function initDb() {
      PRIMARY KEY (demo_id, day)
     );
   `)
+  
+    await pool.query(`
+    SELECT plan, COUNT(*)::int AS c
+    FROM api_keys
+    GROUP BY plan
+    ORDER BY c DESC
+  `);
+
 
   // índices opcionales (mejor rendimiento en dashboard)
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_api_logs_ts ON api_logs(ts);`);

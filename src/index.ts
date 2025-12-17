@@ -10,8 +10,10 @@ import { apiKeyMiddleware } from "./middlewares/apikey.middleware";
 import { logsMiddleware } from "./middlewares/logs.middleware";
 import { requestLogger } from "./middlewares/requestLogger";
 import { rateLimitMiddleware } from "./middlewares/rateLimit.middleware";
+import stripeRoutes from "./routes/stripe.routes";
 
 import { initDb } from "./db/initDb";
+
 
 //dotenv.config();
 
@@ -32,6 +34,8 @@ async function bootstrap() {
 
   app.use(cors({ origin: allowedOrigins }));
   app.use(express.json());
+
+  app.use("/api", stripeRoutes);
 
   // (Opcional) requestLogger para debug
   app.use(requestLogger);
