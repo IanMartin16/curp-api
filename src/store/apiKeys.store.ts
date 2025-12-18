@@ -14,55 +14,21 @@ export interface ApiKeyRecord {
   revokedAt?: string | null;
 }
 
-// ✅ Migra/crea tablas e índices al arrancar
-export async function migrateApiSchema() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS api_keys (
-      id TEXT PRIMARY KEY,
-      key TEXT UNIQUE NOT NULL,
-      label TEXT NOT NULL,
-      plan TEXT NOT NULL,
-      active BOOLEAN NOT NULL DEFAULT TRUE,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      revoked_at TIMESTAMPTZ NULL
-    );
-  `);
-
-  await pool.query(`
-    CREATE INDEX IF NOT EXISTS idx_api_keys_active ON api_keys(active);
-  `);
-
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS api_logs (
-      id BIGSERIAL PRIMARY KEY,
-      ts TIMESTAMPTZ NOT NULL DEFAULT now(),
-      path TEXT,
-      method TEXT,
-      status INTEGER,
-      api_key TEXT
-    );
-  `);
-
-  await pool.query(`
-    CREATE INDEX IF NOT EXISTS idx_api_logs_ts ON api_logs(ts);
-  `);
-
-  await pool.query(`
-    CREATE INDEX IF NOT EXISTS idx_api_logs_api_key ON api_logs(api_key);
-  `);
-}
-
 // ✅ Listar keys (para tu /api/admin/keys)
 export async function loadApiKeys(): Promise<ApiKeyRecord[]> {
   const r = await pool.query(`
-    SELECT id, key, label, plan, active,
-           created_at as "createdAt",
-           revoked_at as "revokedAt"
+    SELECT
+      id,
+      key,
+      label,
+      plan,
+      active,
+      created_at as "createdAt",
+      revoked_at as "revokedAt"
     FROM api_keys
     ORDER BY created_at DESC
   `);
 
-  // Convertimos fechas a string ISO para que tu front siga igual
   return r.rows.map((x) => ({
     ...x,
     createdAt: new Date(x.createdAt).toISOString(),
@@ -85,10 +51,11 @@ export async function createApiKey(input: {
     `
     INSERT INTO api_keys (id, key, label, plan, active)
     VALUES ($1, $2, $3, $4, true)
-    RETURNING id, key, label, plan, active,
-              created_at as "createdAt",
-              revoked_at as "revokedAt"
-  `,
+    RETURNING
+      id, key, label, plan, active,
+      created_at as "createdAt",
+      revoked_at as "revokedAt"
+    `,
     [id, key, label, plan]
   );
 
@@ -101,14 +68,14 @@ export async function createApiKey(input: {
 }
 
 // ✅ Revocar key (soft delete)
-export async function revokeApiKey(id: string) {
+export async function revokeApiKey(id: string): Promise<boolean> {
   const r = await pool.query(
     `
     UPDATE api_keys
     SET active = false, revoked_at = now()
     WHERE id = $1
     RETURNING id
-  `,
+    `,
     [id]
   );
 
