@@ -28,6 +28,13 @@ export async function initDb() {
     );
   `);
 
+  await pool.query(`ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS ip TEXT;`);
+  await pool.query(`ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS endpoint TEXT;`);
+  await pool.query(`ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS duration_ms INT;`);
+  await pool.query(`ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS status_code INT;`);
+  await pool.query(`ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS success BOOLEAN;`);
+  await pool.query(`ALTER TABLE api_logs ADD COLUMN IF NOT EXISTS curp TEXT;`);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS api_usage (
       api_key TEXT NOT NULL,
@@ -59,13 +66,6 @@ export async function initDb() {
     );
   `)
   
-    await pool.query(`
-    SELECT plan, COUNT(*)::int AS c
-    FROM api_keys
-    GROUP BY plan
-    ORDER BY c DESC
-  `);
-
 
   // índices opcionales (mejor rendimiento en dashboard)
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_api_logs_ts ON api_logs(ts);`);
