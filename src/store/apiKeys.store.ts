@@ -95,3 +95,23 @@ export async function isActiveClientKey(key: string): Promise<boolean> {
 export function generateRandomKey(): string {
   return "curp_" + crypto.randomBytes(12).toString("hex");
 }
+
+// ✅ Traer metadata de la key (NO regreses la key completa)
+export async function getActiveClientKeyMeta(key: string): Promise<{
+  id: string;
+  plan: PlanType;
+  label: string;
+} | null> {
+  const r = await pool.query(
+    `
+    SELECT id, plan, label
+    FROM api_keys
+    WHERE key = $1 AND active = true
+    LIMIT 1
+    `,
+    [key]
+  );
+
+  if (r.rowCount === 0) return null;
+  return r.rows[0];
+}

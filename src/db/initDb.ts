@@ -1,3 +1,4 @@
+//initDb.ts
 import { pool } from "../db";
 
 export async function initDb() {

@@ -1,3 +1,4 @@
+//logs.middleware.ts
 import { Request, Response, NextFunction } from "express";
 import { pool } from "../db"; // ajusta la ruta si tu pool está en otro lado
 
@@ -10,7 +11,7 @@ export function logsMiddleware(req: Request, res: Response, next: NextFunction) 
     const logEntry = {
       ts: new Date().toISOString(),
       ip: String(req.ip || req.headers["x-forwarded-for"] || "unknown"),
-      api_key: String((req as any).apiKey || "no-key"),
+      api_key: String((req as any).apiKeyId || "no-key"),
       endpoint: String(req.originalUrl || ""),
       method: String(req.method || ""),
       duration_ms: duration,
