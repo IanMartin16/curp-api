@@ -11,11 +11,13 @@ import { logsMiddleware } from "./middlewares/logs.middleware";
 import { requestLogger } from "./middlewares/requestLogger";
 import { rateLimitMiddleware } from "./middlewares/rateLimit.middleware";
 import stripeRoutes from "./routes/stripe.routes";
+import dashboardSessionRoutes from "./routes/dashboardSession.routes";
 
 import { initDb } from "./db/initDb";
 
 
 //dotenv.config();
+
 
 async function bootstrap() {
   // ✅ Una sola migración (initDb ya crea api_keys, api_logs, api_usage)
@@ -34,6 +36,7 @@ async function bootstrap() {
 
   app.use(cors({ origin: allowedOrigins }));
   app.use(express.json());
+  app.use("/api", dashboardSessionRoutes);
 
   app.use("/api", stripeRoutes);
 

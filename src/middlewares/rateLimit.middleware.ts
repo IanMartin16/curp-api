@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { pool } from "../db";
 
 const LIMITS = {
-  free: 500,
+  free: 50,
   developer: 10_000,
   business: 50_000,
 } as const;

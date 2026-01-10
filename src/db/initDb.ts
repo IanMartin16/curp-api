@@ -18,6 +18,9 @@ await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS stripe_customer_
 await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;`);
 await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS stripe_session_id TEXT;`);
 
+await pool.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_stripe_sub ON api_keys(stripe_subscription_id);`);
+await pool.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_stripe_session ON api_keys(stripe_session_id);`);
+
 // Índice único opcional para evitar duplicados por subscription
 await pool.query(`
   CREATE UNIQUE INDEX IF NOT EXISTS ux_api_keys_stripe_subscription_id
@@ -83,4 +86,21 @@ await pool.query(`
   // índices opcionales (mejor rendimiento en dashboard)
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_api_logs_ts ON api_logs(ts);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_api_logs_key ON api_logs(api_key);`);
+
+  // dashboard session login sin email
+  await pool.query(`
+  CREATE TABLE IF NOT EXISTS dashboard_sessions (
+    id BIGSERIAL PRIMARY KEY,
+    token TEXT UNIQUE NOT NULL,
+    api_key TEXT NOT NULL,
+    stripe_session_id TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL,
+    revealed_at TIMESTAMPTZ NULL,
+    revoked_at TIMESTAMPTZ
+  );
+`);
+await pool.query(`CREATE INDEX IF NOT EXISTS idx_dash_sessions_api_key ON dashboard_sessions(api_key);`);
+
 }
+
