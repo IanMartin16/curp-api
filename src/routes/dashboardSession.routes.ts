@@ -93,3 +93,6 @@ router.post("/stripe/dashboard-session", async (req, res) => {
     return res.status(500).json({ ok: false, error: e?.message || "Error" });
   }
 });
+
+export default router;
+
