@@ -51,10 +51,11 @@ router.post("/stripe/fulfill", async (req, res) => {
 
     const ins = await pool.query(
       `INSERT INTO api_keys (id, key, label, plan, active, stripe_customer_id, stripe_subscription_id, stripe_session_id)
-       VALUES ($1, $2, $3, true, $4, $5, $6, $7)
+       VALUES ($1, $2, $3, $4, true, $5, $6, $7)
        RETURNING id, key, label, plan, active, created_at, revoked_at`,
       [id, newKey, label, plan, customerId, subscriptionId, sessionId]
     );
+    console.log("FULFILL:", { id, newKey, label, plan, customerId, subscriptionId, sessionId });
 
     return res.status(201).json({ ok: true, key: ins.rows[0], existing: false });
   } catch (e: any) {
