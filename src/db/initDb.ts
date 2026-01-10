@@ -14,6 +14,18 @@ export async function initDb() {
     );
   `);
 
+await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT;`);
+await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;`);
+await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS stripe_session_id TEXT;`);
+
+// Índice único opcional para evitar duplicados por subscription
+await pool.query(`
+  CREATE UNIQUE INDEX IF NOT EXISTS ux_api_keys_stripe_subscription_id
+  ON api_keys(stripe_subscription_id)
+  WHERE stripe_subscription_id IS NOT NULL;
+`);
+
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS api_logs (
       id BIGSERIAL PRIMARY KEY,

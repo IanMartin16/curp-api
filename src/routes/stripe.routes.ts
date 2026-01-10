@@ -1,3 +1,4 @@
+//stripe.routes.ts
 import { Router } from "express";
 import { pool } from "../db";
 import crypto from "crypto";
@@ -44,14 +45,15 @@ router.post("/stripe/fulfill", async (req, res) => {
     }
 
     // 2) crear nueva key
+    const id = `key_${crypto.randomBytes(6).toString("hex")}`;
     const newKey = genKey();
     const label = email ? `stripe:${email}` : "stripe";
 
     const ins = await pool.query(
-      `INSERT INTO api_keys (key, label, plan, active, stripe_customer_id, stripe_subscription_id, stripe_session_id)
-       VALUES ($1, $2, $3, true, $4, $5, $6)
+      `INSERT INTO api_keys (id, key, label, plan, active, stripe_customer_id, stripe_subscription_id, stripe_session_id)
+       VALUES ($1, $2, $3, true, $4, $5, $6, $7)
        RETURNING id, key, label, plan, active, created_at, revoked_at`,
-      [newKey, label, plan, customerId, subscriptionId, sessionId]
+      [id, newKey, label, plan, customerId, subscriptionId, sessionId]
     );
 
     return res.status(201).json({ ok: true, key: ins.rows[0], existing: false });
