@@ -59,6 +59,16 @@ async function bootstrap() {
   // 🔐 ADMIN primero (sin logs ni rate limit)
   app.use("/api/admin", adminRouter);
 
+  app.get("/api/_debug/headers", (req, res) => {
+  res.json({
+    ok: true,
+    received: Object.keys(req.headers),
+    xApiKey: req.headers["x-api-key"] ?? null,
+    auth: req.headers["authorization"] ?? null,
+  });
+});
+
+
   // 🧾 Logs solo para lo demás (principalmente /api/curp)
   app.use(logsMiddleware);
 
