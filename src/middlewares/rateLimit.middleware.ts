@@ -103,6 +103,18 @@ export async function rateLimitMiddleware(req: Request, res: Response, next: Nex
       [key, m, limit]
     );
 
+    await pool.query(
+      `
+      INSERT INTO api_usage_daily (api_key, day, used)
+      VALUES ($1, CURRENT_DATE, 1)
+      ON CONFLICT (api_key, day) DO UPDATE
+        SET used = api_usage_daily.used + 1,
+            updated_at = NOW()
+      `,
+        [key]
+      );
+
+
     if (incR.rowCount === 0) {
       const curR = await pool.query(
         `SELECT used FROM api_usage WHERE api_key = $1 AND month = $2 LIMIT 1`,

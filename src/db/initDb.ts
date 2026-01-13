@@ -18,6 +18,12 @@ await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS stripe_customer_
 await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT;`);
 await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS stripe_session_id TEXT;`);
 
+await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS shown_at TIMESTAMPTZ NULL;`);
+await pool.query(`ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS key_masked TEXT NULL;`);
+
+// opcional pero recomendado: index por session_id
+await pool.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_stripe_session_id ON api_keys(stripe_session_id);`);
+
 await pool.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_stripe_sub ON api_keys(stripe_subscription_id);`);
 await pool.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_stripe_session ON api_keys(stripe_session_id);`);
 
