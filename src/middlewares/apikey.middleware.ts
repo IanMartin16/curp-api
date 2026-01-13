@@ -4,33 +4,40 @@ import crypto from "crypto";
 import { getActiveClientKeyMeta } from "../store/apiKeys.store";
 
 export async function apiKeyMiddleware(req: Request, res: Response, next: NextFunction) {
-  const headerKey = req.header("x-api-key");
+  // DEBUG TEMPORAL (quítalo después)
+  const debugHeader = {
+    xApiKey: req.headers["x-api-key"],
+    xApiKey2: req.get("x-api-key"),
+    auth: req.headers["authorization"],
+    all: Object.keys(req.headers),
+  };
+  // console.log("HEADERS DEBUG", debugHeader);
 
-  // ✅ Solo permitir DEMO sin key en: POST /api/curp/validate
+  const raw =
+    (req.get("x-api-key") ||
+      (req.headers["x-api-key"] as string) ||
+      req.get("apiKey") ||
+      req.get("apikey") ||
+      req.get("authorization") ||
+      "") as string;
+
+  const headerKey = raw.replace(/^Bearer\s+/i, "").trim();
+
   const isValidate = req.method === "POST" && req.path === "/validate";
 
-  // ------- DEMO SIN KEY -------
   if (!headerKey) {
-    if (!isValidate) {
-      return res.status(401).json({ ok: false, error: "Falta header x-api-key" });
-    }
-
-    const ipRaw =
-      (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
-      req.ip ||
-      "unknown";
-
-    const demoId = crypto.createHash("sha256").update(ipRaw).digest("hex").slice(0, 24);
-
-    (req as any).apiKeyId = "no-key";   // para logs/dashboard
-    (req as any).plan = "free";
-    (req as any).label = "demo";
-    (req as any).isMasterKey = false;
-    (req as any).isDemo = true;
-    (req as any).demoId = demoId;
-
-    return next();
+    // 👇 deja este error por ahora
+    return res.status(401).json({
+      ok: false,
+      error: "Falta apiKey en request",
+      debug: {
+        receivedKeys: Object.keys(req.headers),
+        hasXApiKey: !!req.headers["x-api-key"],
+        hasAuth: !!req.headers["authorization"],
+      },
+    });
   }
+  
 
   // ------- MASTER KEY -------
   const masterKey = process.env.MASTER_API_KEY;
@@ -59,5 +66,5 @@ export async function apiKeyMiddleware(req: Request, res: Response, next: NextFu
   (req as any).isMasterKey = false;
   (req as any).isDemo = false;
 
-  next();
+  return next();
 }
