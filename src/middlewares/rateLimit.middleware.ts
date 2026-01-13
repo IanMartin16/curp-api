@@ -72,21 +72,14 @@ export async function rateLimitMiddleware(req: Request, res: Response, next: Nex
     }
 
     // 🔑 NORMAL (con api key)
-    const key = (req as any).apiKey as string | undefined;
+    const key = (req as any).__apiKey as string | undefined;
     if (!key) return res.status(401).json({ ok: false, error: "Falta apiKey en request" });
 
-    const planR = await pool.query(
-      `SELECT plan FROM api_keys WHERE active = true AND key = $1 LIMIT 1`,
-      [key]
-    );
-
-    if (planR.rowCount === 0) {
-      return res.status(403).json({ ok: false, error: "API key inválida o revocada" });
-    }
-
-    const plan = (String(planR.rows[0].plan || "free") as Plan) || "free";
+    // usa el plan que ya resolvió apiKeyMiddleware
+    const plan = (String((req as any).plan || "free") as Plan) || "free";
     const limit = LIMITS[plan] ?? LIMITS.free;
     const m = monthKey();
+
 
     const incR = await pool.query(
       `

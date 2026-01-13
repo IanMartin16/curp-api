@@ -58,6 +58,9 @@ export async function apiKeyMiddleware(req: Request, res: Response, next: NextFu
   if (!meta) {
     return res.status(403).json({ ok: false, error: "API key inválida o no autorizada" });
   }
+  // Guardar apiKey SOLO para rateLimit/usage (no la imprimas en logs)
+  (req as any).__apiKey = headerKey;
+
 
   // 🔥 OJO: NO guardes headerKey en req para que jamás se loguee
   (req as any).apiKeyId = meta.id;
