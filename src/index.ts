@@ -35,7 +35,8 @@ async function bootstrap() {
     "https://www.curpify.com",
   ];
 
-  app.use(cors({ origin: allowedOrigins }));
+  app.use(cors({ origin: allowedOrigins, allowedHeaders: ["Content-Type", "x-api-key", "x-internal-secret", "authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], }));
   app.use(express.json());
   app.use("/api", dashboardSessionRouter);
 
