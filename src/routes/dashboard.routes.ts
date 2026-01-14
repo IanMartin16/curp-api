@@ -112,10 +112,10 @@ router.get("/dashboard/last", async (req, res) => {
     // ⚠️ AJUSTA nombres de columnas según tu api_logs real:
     // asumo: api_logs(api_key, curp, success, status_code, created_at, response_json?)
     const q = await pool.query(
-      `SELECT curp, success, status_code, created_at
+      `SELECT curp, success, status_code, ts
        FROM api_logs
        WHERE api_key = $1
-       ORDER BY created_at DESC
+       ORDER BY ts DESC
        LIMIT 1`,
       [apiKey]
     );
@@ -134,7 +134,7 @@ router.get("/dashboard/last", async (req, res) => {
         curpMasked: maskedCurp,
         success: !!row.success,
         statusCode: Number(row.status_code),
-        createdAt: row.created_at,
+        createdAt: row.ts,
       },
     });
   } catch (e: any) {
