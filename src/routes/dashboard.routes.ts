@@ -142,4 +142,50 @@ router.get("/dashboard/last", async (req, res) => {
   }
 });
 
+router.get("/dashboard/recent", async (req, res) => {
+  try {
+    const apiKey = req.header("x-api-key") || "";
+    if (!apiKey) return res.status(401).json({ ok: false, error: "Missing API key" });
+
+    const limit = Math.min(Number(req.query.limit || 10), 50);
+
+    // valida key activa
+    const k = await pool.query(
+      `SELECT active FROM api_keys WHERE key = $1 LIMIT 1`,
+      [apiKey]
+    );
+    if (!k.rowCount) return res.status(401).json({ ok: false, error: "Invalid API key" });
+    if (!k.rows[0].active) return res.status(403).json({ ok: false, error: "API key revoked" });
+
+    const q = await pool.query(
+      `SELECT ts, curp, success, status_code, duration_ms, endpoint, method
+       FROM api_logs
+       WHERE api_key = $1
+       ORDER BY ts DESC
+       LIMIT $2`,
+      [apiKey, limit]
+    );
+
+    const items = q.rows.map((r: any) => {
+      const c = String(r.curp || "");
+      const curpMasked = c.length >= 10 ? `${c.slice(0, 4)}******${c.slice(-2)}` : c;
+
+      return {
+        ts: r.ts,
+        curpMasked,
+        success: !!r.success,
+        statusCode: Number(r.status_code),
+        durationMs: r.duration_ms ?? null,
+        endpoint: r.endpoint ?? null,
+        method: r.method ?? null,
+      };
+    });
+
+    return res.json({ ok: true, items });
+  } catch (e: any) {
+    return res.status(500).json({ ok: false, error: e?.message || "Error" });
+  }
+});
+
+
 export default router;
