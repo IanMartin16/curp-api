@@ -87,6 +87,10 @@ router.get("/dashboard/daily", async (req, res) => {
       [apiKey, days]
     );
 
+    const items = rows
+      .map((r: any) => ({ day: String(r.day), used: Number(r.used || 0) }))
+      .reverse();
+
     return res.json({ ok: true, items: rows.rows });
   } catch (e: any) {
     return res.status(500).json({ ok: false, error: e?.message || "Error" });
