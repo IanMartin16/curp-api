@@ -93,4 +93,53 @@ router.get("/dashboard/daily", async (req, res) => {
   }
 });
 
+router.get("/dashboard/last", async (req, res) => {
+  try {
+    const apiKey = req.header("x-api-key") || "";
+    if (!apiKey) return res.status(401).json({ ok: false, error: "Missing API key" });
+
+    // valida key activa
+    const k = await pool.query(
+      `SELECT key, plan, active
+       FROM api_keys
+       WHERE key = $1
+       LIMIT 1`,
+      [apiKey]
+    );
+    if (!k.rowCount) return res.status(401).json({ ok: false, error: "Invalid API key" });
+    if (!k.rows[0].active) return res.status(403).json({ ok: false, error: "API key revoked" });
+
+    // ⚠️ AJUSTA nombres de columnas según tu api_logs real:
+    // asumo: api_logs(api_key, curp, success, status_code, created_at, response_json?)
+    const q = await pool.query(
+      `SELECT curp, success, status_code, created_at
+       FROM api_logs
+       WHERE api_key = $1
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [apiKey]
+    );
+
+    if (!q.rowCount) return res.json({ ok: true, item: null });
+
+    const row = q.rows[0];
+
+    // opcional: enmascarar CURP (recomendado)
+    const c = String(row.curp || "");
+    const maskedCurp = c.length >= 10 ? `${c.slice(0, 4)}******${c.slice(-2)}` : c;
+
+    return res.json({
+      ok: true,
+      item: {
+        curpMasked: maskedCurp,
+        success: !!row.success,
+        statusCode: Number(row.status_code),
+        createdAt: row.created_at,
+      },
+    });
+  } catch (e: any) {
+    return res.status(500).json({ ok: false, error: e?.message || "Error" });
+  }
+});
+
 export default router;

@@ -12,6 +12,7 @@ import { requestLogger } from "./middlewares/requestLogger";
 import { rateLimitMiddleware } from "./middlewares/rateLimit.middleware";
 import stripeRoutes from "./routes/stripe.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
+import dashboardRouter from "./routes/dashboard.routes";
 import dashboardSessionRouter from "./routes/dashboardSession.routes";
 
 import { initDb } from "./db/initDb";
@@ -46,6 +47,8 @@ async function bootstrap() {
   app.use("/api", dashboardSessionRouter);
   app.use("/api", stripeRoutes);
   app.use("/api", dashboardRoutes);
+  app.use("/api", dashboardRouter);
+
 
 
   // (Opcional) requestLogger para debug
