@@ -3,7 +3,7 @@ import { pool } from "../db";
 
 const LIMITS = {
   free: 50,
-  developer: 10_000,
+  developer: 5_000,
   business: 50_000,
 } as const;
 

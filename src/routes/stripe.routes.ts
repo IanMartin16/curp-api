@@ -2,6 +2,7 @@ import { Router } from "express";
 import { pool } from "../db";
 import crypto from "crypto";
 
+const id = crypto.randomUUID();
 const router = Router();
 const INTERNAL_SECRET = process.env.INTERNAL_WEBHOOK_SECRET || "";
 
@@ -52,7 +53,7 @@ router.post("/stripe/fulfill", async (req, res) => {
     const masked = maskKey(newKey);
 
     const ins = await pool.query(
-      `INSERT INTO api_keys (key, key_masked, label, plan, active, stripe_customer_id, stripe_subscription_id, stripe_session_id)
+      `INSERT INTO api_keys (id, key, key_masked, label, plan, active, stripe_customer_id, stripe_subscription_id, stripe_session_id)
        VALUES ($1, $2, $3, $4, true, $5, $6, $7)
        RETURNING id, key_masked, label, plan, active, created_at, revoked_at`,
       [newKey, masked, label, plan, customerId, subscriptionId, sessionId]
