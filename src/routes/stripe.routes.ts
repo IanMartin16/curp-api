@@ -56,7 +56,7 @@ router.post("/stripe/fulfill", async (req, res) => {
       `INSERT INTO api_keys (id, key, key_masked, label, plan, active, stripe_customer_id, stripe_subscription_id, stripe_session_id)
        VALUES ($1, $2, $3, $4, true, $5, $6, $7, $8)
        RETURNING id, key_masked, label, plan, active, created_at, revoked_at`,
-      [newKey, masked, label, plan, customerId, subscriptionId, sessionId]
+      [id, newKey, masked, label, plan, customerId, subscriptionId, sessionId]
     );
 
     return res.status(201).json({ ok: true, key: ins.rows[0], existing: false });
