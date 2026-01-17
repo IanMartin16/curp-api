@@ -34,7 +34,7 @@ export async function apiKeyMiddleware(req: Request, res: Response, next: NextFu
     const demoId = crypto.createHash("sha256").update(ipRaw).digest("hex").slice(0, 24);
 
     // Flags para que rateLimitMiddleware lo detecte
-    (req as any).apiKeyId = "demo";
+    (req as any).apiKeyId = "no-key";
     (req as any).plan = "free";
     (req as any).label = "demo";
     (req as any).isMasterKey = false;
@@ -56,8 +56,8 @@ export async function apiKeyMiddleware(req: Request, res: Response, next: NextFu
     (req as any).isMasterKey = true;
     (req as any).isDemo = false;
 
-    // Para rateLimit (si lo usas) y logs
-    (req as any).__apiKey = headerKey;
+    // Para rateLimit y logs
+    const key = (req as any).__apiKey as string | undefined;
     return next();
   }
 
@@ -68,7 +68,7 @@ export async function apiKeyMiddleware(req: Request, res: Response, next: NextFu
     return res.status(403).json({ ok: false, error: "API key inválida o no autorizada" });
   }
 
-  // ✅ Guardar la apiKey SOLO para rateLimit/usage (no la imprimas en logs)
+  // ✅ Guardar la apiKey SOLO para rateLimit/usage
   (req as any).__apiKey = headerKey;
 
   (req as any).apiKeyId = meta.id;

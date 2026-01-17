@@ -14,6 +14,7 @@ import stripeRoutes from "./routes/stripe.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import dashboardRouter from "./routes/dashboard.routes";
 import dashboardSessionRouter from "./routes/dashboardSession.routes";
+import freeKeyRoutes from "./routes/freeKey.routes";
 
 import { initDb } from "./db/initDb";
 
@@ -48,7 +49,7 @@ async function bootstrap() {
   app.use("/api", stripeRoutes);
   app.use("/api", dashboardRoutes);
   app.use("/api", dashboardRouter);
-
+  app.use("/api", freeKeyRoutes);
 
 
   // (Opcional) requestLogger para debug

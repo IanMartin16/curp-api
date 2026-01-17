@@ -24,10 +24,11 @@ function dayKey(d = new Date()) {
 
 export async function rateLimitMiddleware(req: Request, res: Response, next: NextFunction) {
   try {
+    // ✅ MASTER no limita
     const isMaster = Boolean((req as any).isMasterKey);
     if (isMaster) return next();
 
-    // ✅ DEMO MODE (sin api key)
+    // ✅ DEMO MODE (sin api key) = 5 por día por IP
     const isDemo = Boolean((req as any).isDemo);
     if (isDemo) {
       const demoId = String((req as any).demoId || "");
@@ -71,17 +72,20 @@ export async function rateLimitMiddleware(req: Request, res: Response, next: Nex
       return next();
     }
 
-    // 🔑 NORMAL (con api key)
+    // ✅ NORMAL (con api key) — la key real la guardamos como __apiKey
     const key = (req as any).__apiKey as string | undefined;
-    if (!key) return res.status(401).json({ ok: false, error: "Falta apiKey en request" });
+    if (!key) {
+      return res.status(401).json({ ok: false, error: "Falta apiKey en request" });
+    }
 
-    // usa el plan que ya resolvió apiKeyMiddleware
-    const plan = (String((req as any).plan || "free") as Plan) || "free";
-    const limit = LIMITS[plan] ?? LIMITS.free;
+    // ✅ Plan ya viene del apiKeyMiddleware (evita query extra)
+    const planRaw = String((req as any).plan || "free") as Plan;
+    const plan: Plan = (planRaw in LIMITS ? planRaw : "free");
+    const limit = LIMITS[plan];
     const m = monthKey();
 
-
-    const incR = await pool.query(
+    // 1) mensual (api_usage)
+    const incMonthly = await pool.query(
       `
       WITH upsert AS (
         INSERT INTO api_usage (api_key, month, used)
@@ -96,6 +100,7 @@ export async function rateLimitMiddleware(req: Request, res: Response, next: Nex
       [key, m, limit]
     );
 
+    // 2) diario (api_usage_daily)
     await pool.query(
       `
       INSERT INTO api_usage_daily (api_key, day, used)
@@ -104,11 +109,10 @@ export async function rateLimitMiddleware(req: Request, res: Response, next: Nex
         SET used = api_usage_daily.used + 1,
             updated_at = NOW()
       `,
-        [key]
-      );
+      [key]
+    );
 
-
-    if (incR.rowCount === 0) {
+    if (incMonthly.rowCount === 0) {
       const curR = await pool.query(
         `SELECT used FROM api_usage WHERE api_key = $1 AND month = $2 LIMIT 1`,
         [key, m]
