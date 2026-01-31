@@ -17,6 +17,7 @@ import dashboardSessionRouter from "./routes/dashboardSession.routes";
 import freeKeyRoutes from "./routes/freeKey.routes";
 import { liteGuard, liteDailyLimit } from "./middlewares/lite.middleware";
 import metaRouter from "./routes/meta.routes";
+import { rapidApiGate, rapidApiBypassLimit } from "./middlewares/rapidapi.middleware";
 
 import { initDb } from "./db/initDb";
 
@@ -43,6 +44,9 @@ async function bootstrap() {
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], }));
   app.use(express.json());
   app.use("/api", dashboardSessionRouter);
+
+  app.use(rapidApiGate);
+  app.use(rapidApiBypassLimit);
   
    // ✅ 1) LITE: primero guard y limit
   app.use(liteGuard);

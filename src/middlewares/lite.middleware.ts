@@ -31,6 +31,8 @@ export function liteGuard(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function liteDailyLimit(req: Request, res: Response, next: NextFunction) {
+  // Si viene de RapidAPI y habilitaste bypass, no contamos contra el límite
+  if ((req as any).__bypassLiteLimit === true) return next();
   if (!isLite()) return next();
 
   const limit = Number(process.env.LITE_DAILY_LIMIT ?? "10");
