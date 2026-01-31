@@ -15,6 +15,8 @@ import dashboardRoutes from "./routes/dashboard.routes";
 import dashboardRouter from "./routes/dashboard.routes";
 import dashboardSessionRouter from "./routes/dashboardSession.routes";
 import freeKeyRoutes from "./routes/freeKey.routes";
+import { liteGuard, liteDailyLimit } from "./middlewares/lite.middleware";
+import metaRouter from "./routes/meta.routes";
 
 import { initDb } from "./db/initDb";
 
@@ -41,10 +43,15 @@ async function bootstrap() {
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], }));
   app.use(express.json());
   app.use("/api", dashboardSessionRouter);
+  
+   // ✅ 1) LITE: primero guard y limit
+  app.use(liteGuard);
+  app.use(liteDailyLimit);
 
-  app.use("/api", stripeRoutes);
+  // ✅ 2) Meta (queda: GET /api/meta)
+  app.use("/api", metaRouter);
 
-  //routes 
+  // ✅ 3) Rutas reales
   app.use("/api", dashboardSessionRouter);
   app.use("/api", stripeRoutes);
   app.use("/api", dashboardRoutes);

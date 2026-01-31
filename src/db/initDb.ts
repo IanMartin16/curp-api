@@ -106,7 +106,15 @@ await pool.query(`
     revoked_at TIMESTAMPTZ
   );
 `);
-await pool.query(`CREATE INDEX IF NOT EXISTS idx_dash_sessions_api_key ON dashboard_sessions(api_key);`);
-
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_dash_sessions_api_key ON dashboard_sessions(api_key);`);
+  //curpify lite
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS lite_usage (
+      day DATE NOT NULL,
+      ip_hash TEXT NOT NULL,
+      count INT NOT NULL DEFAULT 0,
+      PRIMARY KEY (day, ip_hash)
+    );
+  `);
 }
 
