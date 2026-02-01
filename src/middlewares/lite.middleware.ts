@@ -7,6 +7,7 @@ const isLite = () => (process.env.CURPIFY_MODE ?? "full") === "lite";
 const LITE_ALLOWED = new Set([
   "/api/curp/validate",
   "/api/meta",
+  "/api/health"
 ]);
 
 function getClientIp(req: Request) {
@@ -22,6 +23,8 @@ function hashIp(ip: string) {
 }
 
 export function liteGuard(req: Request, res: Response, next: NextFunction) {
+    console.log("[liteGuard] method=", req.method, "path=", req.path, "originalUrl=", req.originalUrl);
+
   if (!isLite()) return next();
 
   if (!LITE_ALLOWED.has(req.path)) {
@@ -54,7 +57,7 @@ export async function liteDailyLimit(req: Request, res: Response, next: NextFunc
       ok: false,
       error: "Daily limit reached",
       daily_limit: limit,
-      upgrade_url: "https://evi_link.dev/pricing",
+      upgrade_url: "https://curpify.com/pricing",
     });
   }
 
