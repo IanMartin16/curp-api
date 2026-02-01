@@ -31,16 +31,6 @@ async function bootstrap() {
   await initDb();
 
   const app = express();
-app.get("/api/_debug/version", (_req, res) => {
-  res.json({
-    ok: true,
-    mode: process.env.CURPIFY_MODE ?? "full",
-    commit: process.env.RAILWAY_GIT_COMMIT_SHA ?? null,
-    ts: new Date().toISOString()
-  });
-});
-
-
   app.set("trust proxy", 1);
   const PORT = process.env.PORT || 4000;
 

@@ -7,7 +7,8 @@ const isLite = () => (process.env.CURPIFY_MODE ?? "full") === "lite";
 const LITE_ALLOWED = new Set([
   "/api/curp/validate",
   "/api/meta",
-  "/api/health"
+  "/api/health",
+  "/health"
 ]);
 
 function getClientIp(req: Request) {
@@ -23,7 +24,6 @@ function hashIp(ip: string) {
 }
 
 export function liteGuard(req: Request, res: Response, next: NextFunction) {
-    console.log("[liteGuard] method=", req.method, "path=", req.path, "originalUrl=", req.originalUrl);
 
   if (!isLite()) return next();
 
