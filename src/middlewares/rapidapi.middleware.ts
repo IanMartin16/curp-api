@@ -7,6 +7,9 @@ function isLite() {
 export function rapidApiGate(req: Request, res: Response, next: NextFunction) {
   if (!isLite()) return next();
 
+  // ✅ Allow health check without auth (RapidAPI requires it)
+  if (req.path === "/api/health") return next();
+
   const enforceOnly = (process.env.RAPIDAPI_ENFORCE_ONLY ?? "false") === "true";
   const secret = process.env.RAPIDAPI_SECRET ?? "";
 
