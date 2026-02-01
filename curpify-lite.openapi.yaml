@@ -1,183 +1,215 @@
-{
-  "openapi": "3.0.3",
-  "info": {
-    "title": "Curpify Lite – Mexican CURP Validation API",
-    "version": "1.0.0",
-    "description": "Curpify Lite validates Mexican CURP strings and extracts basic identity data such as birth date, gender, and state.\n\nRate limit: 10 requests per day per IP.\n\nEndpoints:\n- POST /api/curp/validate\n- GET /api/meta\n\nUpgrade: https://curpify.com/pricing"
-  },
-  "servers": [
-    {
-      "url": "https://curp-api-production-b4e0.up.railway.app",
-      "description": "Production (Lite)"
-    }
-  ],
-  "paths": {
-    "/api/meta": {
-      "get": {
-        "summary": "Get API metadata (mode, limits, allowed endpoints)",
-        "operationId": "getMeta",
-        "responses": {
-          "200": {
-            "description": "Metadata for Curpify Lite",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/MetaResponse" },
-                "examples": {
-                  "lite": {
-                    "value": {
-                      "name": "curpify",
-                      "mode": "lite",
-                      "daily_limit": 10,
-                      "allowed_endpoints": ["/api/curp/validate", "/api/meta"],
-                      "upgrade_url": "https://curpify.com/pricing"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/curp/validate": {
-      "post": {
-        "summary": "Validate and parse a CURP",
-        "operationId": "validateCurp",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/ValidateRequest" },
-              "examples": {
-                "valid": {
-                  "value": { "curp": "GODE561231HDFRRN09" }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Validation result",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ValidateResponse" },
-                "examples": {
-                  "ok_valid": {
-                    "value": {
-                      "ok": true,
-                      "curp": "GODE561231HDFRRN09",
-                      "isValid": true,
-                      "data": { "year": 1956, "month": 12, "day": 31, "gender": "H", "state": "DF" }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad request (missing/invalid body)",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
-                "examples": {
-                  "missing_curp": {
-                    "value": { "ok": false, "error": "Missing curp" }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Daily rate limit reached",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/RateLimitResponse" },
-                "examples": {
-                  "rate_limited": {
-                    "value": {
-                      "ok": false,
-                      "error": "Daily limit reached",
-                      "daily_limit": 10,
-                      "upgrade_url": "https://curpify.com/pricing"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  "components": {
-    "schemas": {
-      "ValidateRequest": {
-        "type": "object",
-        "required": ["curp"],
-        "properties": {
-          "curp": {
-            "type": "string",
-            "description": "CURP string to validate",
-            "example": "GODE561231HDFRRN09"
-          }
-        },
-        "additionalProperties": false
-      },
-      "ValidateResponse": {
-        "type": "object",
-        "required": ["ok", "curp", "isValid"],
-        "properties": {
-          "ok": { "type": "boolean", "example": true },
-          "curp": { "type": "string", "example": "GODE561231HDFRRN09" },
-          "isValid": { "type": "boolean", "example": true },
-          "data": { "$ref": "#/components/schemas/CurpData" }
-        }
-      },
-      "CurpData": {
-        "type": "object",
-        "properties": {
-          "year": { "type": "integer", "example": 1956 },
-          "month": { "type": "integer", "example": 12, "minimum": 1, "maximum": 12 },
-          "day": { "type": "integer", "example": 31, "minimum": 1, "maximum": 31 },
-          "gender": { "type": "string", "example": "H", "description": "H or M" },
-          "state": { "type": "string", "example": "DF", "description": "Two-letter state code" }
-        },
-        "additionalProperties": true
-      },
-      "MetaResponse": {
-        "type": "object",
-        "required": ["name", "mode", "upgrade_url"],
-        "properties": {
-          "name": { "type": "string", "example": "curpify" },
-          "mode": { "type": "string", "example": "lite" },
-          "daily_limit": { "type": "integer", "nullable": true, "example": 10 },
-          "allowed_endpoints": {
-            "type": "array", "nullable": true,
-            "items": { "type": "string" },
-            "example": ["/api/curp/validate", "/api/meta"]
-          },
-          "upgrade_url": { "type": "string", "example": "https://curpify.com/pricing" }
-        }
-      },
-      "RateLimitResponse": {
-        "type": "object",
-        "required": ["ok", "error", "daily_limit", "upgrade_url"],
-        "properties": {
-          "ok": { "type": "boolean", "example": false },
-          "error": { "type": "string", "example": "Daily limit reached" },
-          "daily_limit": { "type": "integer", "example": 10 },
-          "upgrade_url": { "type": "string", "example": "https://curpify.com/pricing" }
-        }
-      },
-      "ErrorResponse": {
-        "type": "object",
-        "required": ["ok", "error"],
-        "properties": {
-          "ok": { "type": "boolean", "example": false },
-          "error": { "type": "string", "example": "Bad request" }
-        }
-      }
-    }
-  }
-}
+openapi: 3.0.3
+info:
+  title: Curpify Lite – Mexican CURP Validation API
+  version: 1.0.0
+  description: >
+    Curpify Lite validates Mexican CURP strings and extracts basic identity data.
+    Rate limit: 10 requests/day per IP (direct). RapidAPI traffic can bypass limits based on your backend config.
+
+servers:
+  - url: https://curp-api-production-b4e0.up.railway.app
+    description: Production (Lite)
+
+paths:
+  /api/meta:
+    get:
+      summary: Get API metadata (mode, limits, allowed endpoints)
+      operationId: getMeta
+      security:
+        - RapidApiProxySecret: []
+      responses:
+        "200":
+          description: Metadata for Curpify Lite
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetaResponse"
+              examples:
+                lite:
+                  value:
+                    name: curpify
+                    mode: lite
+                    daily_limit: 10
+                    allowed_endpoints:
+                      - /api/curp/validate
+                      - /api/meta
+                    upgrade_url: https://curpify.com/pricing
+
+  /api/curp/validate:
+    post:
+      summary: Validate and parse a CURP
+      operationId: validateCurp
+      security:
+        - RapidApiProxySecret: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidateRequest"
+            examples:
+              valid:
+                value:
+                  curp: GODE561231HDFRRN09
+      responses:
+        "200":
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidateResponse"
+              examples:
+                ok_valid:
+                  value:
+                    ok: true
+                    curp: GODE561231HDFRRN09
+                    isValid: true
+                    data:
+                      year: 1956
+                      month: 12
+                      day: 31
+                      gender: H
+                      state: DF
+        "400":
+          description: Bad request (missing/invalid body)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missing_curp:
+                  value:
+                    ok: false
+                    error: Missing curp
+        "401":
+          description: Unauthorized (if RAPIDAPI_ENFORCE_ONLY=true and missing headers)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                unauthorized:
+                  value:
+                    ok: false
+                    error: Unauthorized
+        "429":
+          description: Daily rate limit reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RateLimitResponse"
+              examples:
+                rate_limited:
+                  value:
+                    ok: false
+                    error: Daily limit reached
+                    daily_limit: 10
+                    upgrade_url: https://curpify.com/pricing
+
+components:
+  securitySchemes:
+    RapidApiProxySecret:
+      type: apiKey
+      in: header
+      name: x-rapidapi-proxy-secret
+
+  schemas:
+    ValidateRequest:
+      type: object
+      required: [curp]
+      additionalProperties: false
+      properties:
+        curp:
+          type: string
+          description: CURP string to validate
+          example: GODE561231HDFRRN09
+
+    ValidateResponse:
+      type: object
+      required: [ok, curp, isValid]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        curp:
+          type: string
+          example: GODE561231HDFRRN09
+        isValid:
+          type: boolean
+          example: true
+        data:
+          $ref: "#/components/schemas/CurpData"
+
+    CurpData:
+      type: object
+      additionalProperties: true
+      properties:
+        year:
+          type: integer
+          example: 1956
+        month:
+          type: integer
+          example: 12
+        day:
+          type: integer
+          example: 31
+        gender:
+          type: string
+          example: H
+        state:
+          type: string
+          example: DF
+
+    MetaResponse:
+      type: object
+      required: [name, mode, upgrade_url]
+      properties:
+        name:
+          type: string
+          example: curpify
+        mode:
+          type: string
+          example: lite
+        daily_limit:
+          type: integer
+          nullable: true
+          example: 10
+        allowed_endpoints:
+          type: array
+          nullable: true
+          items:
+            type: string
+          example:
+            - /api/curp/validate
+            - /api/meta
+        upgrade_url:
+          type: string
+          example: https://curpify.com/pricing
+
+    RateLimitResponse:
+      type: object
+      required: [ok, error, daily_limit, upgrade_url]
+      properties:
+        ok:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Daily limit reached
+        daily_limit:
+          type: integer
+          example: 10
+        upgrade_url:
+          type: string
+          example: https://curpify.com/pricing
+
+    ErrorResponse:
+      type: object
+      required: [ok, error]
+      properties:
+        ok:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Unauthorized
