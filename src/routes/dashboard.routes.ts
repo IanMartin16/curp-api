@@ -12,6 +12,7 @@ function monthKeyUTC(d = new Date()) {
 function planLimit(plan: string) {
   if (plan === "business") return 50000;
   if (plan === "developer") return 5000;
+  if (plan === "free") return 50;
   return 0;
 }
 
