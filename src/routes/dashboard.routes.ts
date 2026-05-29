@@ -80,7 +80,7 @@ router.get("/dashboard/daily", async (req, res) => {
     if (!k.rows[0].active) return res.status(403).json({ ok: false, error: "API key revoked" });
 
     const q = await pool.query(
-      `SELECT day, used
+       `SELECT TO_CHAR(day, 'YYYY-MM-DD') AS day, used
        FROM api_usage_daily
        WHERE api_key = $1
        ORDER BY day DESC
@@ -88,9 +88,10 @@ router.get("/dashboard/daily", async (req, res) => {
       [apiKey, days]
     );
 
-    const items = q.rows
-      .map((r: any) => ({ day: String(r.day), used: Number(r.used || 0) }))
-      .reverse();
+    const items = q.rows.map((r: any) => ({
+      day: String(r.day),
+      used: Number(r.used || 0),
+    }));
 
     return res.json({ ok: true, items});
   } catch (e: any) {

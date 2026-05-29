@@ -47,7 +47,7 @@ async function recordIdentityUsage(params: {
     await pool.query(
       `
       INSERT INTO api_usage_daily (api_key, day, used)
-      VALUES ($1, CURRENT_DATE, 1)
+      VALUES ($1, (NOW() AT TIME ZONE 'America/Mexico_city')::date, 1)
       ON CONFLICT (api_key, day)
       DO UPDATE SET used = api_usage_daily.used + 1
       `,
