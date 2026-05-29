@@ -4,6 +4,8 @@ import { pool } from "../db"; // si tu pool está en otro path, ajusta (a veces 
 
 const r = Router();
 
+const id = crypto.randomUUID();
+
 function maskKey(k: string) {
   if (k.length <= 10) return "****";
   return k.slice(0, 6) + "..." + k.slice(-4);
@@ -12,8 +14,6 @@ function maskKey(k: string) {
 // POST /api/keys/free  -> crea API key FREE sin Stripe
 r.post("/keys/free", async (_req, res) => {
   try {
-
-    const id = crypto.randomUUID();
 
     const label = "free";
     const plan = "free";

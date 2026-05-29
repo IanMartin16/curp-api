@@ -2,7 +2,6 @@ import { Router } from "express";
 import { pool } from "../db";
 import crypto from "crypto";
 
-const id = crypto.randomUUID();
 const router = Router();
 const INTERNAL_SECRET = process.env.INTERNAL_WEBHOOK_SECRET || "";
 
@@ -51,12 +50,13 @@ router.post("/stripe/fulfill", async (req, res) => {
     const newKey = genKey();
     const label = email ? `stripe:${email}` : "stripe";
     const masked = maskKey(newKey);
+    const newId = crypto.randomUUID();
 
     const ins = await pool.query(
   `INSERT INTO api_keys (id, key, key_masked, label, plan, active, stripe_customer_id, stripe_subscription_id, stripe_session_id)
    VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8)
    RETURNING id, key_masked, label, plan, active, revoked_at`,
-  [id, newKey, masked, label, plan, customerId, subscriptionId, sessionId]
+  [newId, newKey, masked, label, plan, customerId, subscriptionId, sessionId]
 );
 
     return res.status(201).json({ ok: true, key: ins.rows[0], existing: false });
@@ -150,3 +150,75 @@ router.get("/stripe/customer-by-key", async (req, res) => {
 });
 
 export default router;
+
+// ✅ sync subscription status from Stripe webhook
+router.post("/stripe/sync-subscription", async (req, res) => {
+  try {
+    const secret = req.header("x-internal-secret") || "";
+    if (!INTERNAL_SECRET || secret !== INTERNAL_SECRET) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+
+    const { subscriptionId, status } = req.body as {
+      subscriptionId?: string | null;
+      status?: string | null;
+    };
+
+    if (!subscriptionId || !status) {
+      return res.status(400).json({
+        ok: false,
+        error: "Missing subscriptionId or status",
+      });
+    }
+
+    const activeStatuses = new Set(["active", "trialing"]);
+    const inactiveStatuses = new Set([
+      "canceled",
+      "unpaid",
+      "incomplete_expired",
+      "past_due",
+      "paused",
+    ]);
+
+    let active: boolean | null = null;
+
+    if (activeStatuses.has(status)) active = true;
+    if (inactiveStatuses.has(status)) active = false;
+
+    if (active === null) {
+      return res.status(400).json({
+        ok: false,
+        error: `Unsupported subscription status: ${status}`,
+      });
+    }
+
+    const upd = await pool.query(
+      `UPDATE api_keys
+         SET active = $2,
+             revoked_at = CASE WHEN $2 = false THEN NOW() ELSE NULL END
+       WHERE stripe_subscription_id = $1
+       RETURNING id, key_masked, label, plan, active, revoked_at`,
+      [subscriptionId, active]
+    );
+
+    if (!upd.rowCount) {
+      return res.status(404).json({
+        ok: false,
+        error: "No api_key found for subscriptionId",
+      });
+    }
+
+    return res.json({
+      ok: true,
+      subscriptionId,
+      status,
+      active,
+      key: upd.rows[0],
+    });
+  } catch (e: any) {
+    return res.status(500).json({
+      ok: false,
+      error: e?.message || "Error",
+    });
+  }
+});

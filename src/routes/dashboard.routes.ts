@@ -129,13 +129,19 @@ router.get("/dashboard/last", async (req, res) => {
     const row = q.rows[0];
 
     // opcional: enmascarar CURP (recomendado)
-    const c = String(row.curp || "");
-    const maskedCurp = c.length >= 10 ? `${c.slice(0, 4)}******${c.slice(-2)}` : c;
+    const identity = String(row.curp || "");
+    const identityMasked =
+      identity.length >= 10 ? `${identity.slice(0, 4)}******${identity.slice(-2)}` : identity;
+
+    const identityType =
+      identity.length === 18 ? "curp" : identity.length === 12 || identity.length === 13 ? "rfc" : "unknown";
 
     return res.json({
       ok: true,
       item: {
-        curpMasked: maskedCurp,
+        identityMasked,
+        identityType,
+        curpMasked: identityMasked,
         success: !!row.success,
         statusCode: Number(row.status_code),
         createdAt: row.ts,
@@ -171,12 +177,18 @@ router.get("/dashboard/recent", async (req, res) => {
     );
 
     const items = q.rows.map((r: any) => {
-      const c = String(r.curp || "");
-      const curpMasked = c.length >= 10 ? `${c.slice(0, 4)}******${c.slice(-2)}` : c;
+      const identity = String(r.curp || "");
+      const identityMasked =
+        identity.length >= 10 ? `${identity.slice(0, 4)}******${identity.slice(-2)}` : identity;
+
+      const identityType =
+        identity.length === 18 ? "curp" : identity.length === 12 || identity.length === 13 ? "rfc" : "unknown";
 
       return {
         ts: r.ts,
-        curpMasked,
+        identityMasked,
+        identityType,
+        curpMasked: identityMasked,
         success: !!r.success,
         statusCode: Number(r.status_code),
         durationMs: r.duration_ms ?? null,

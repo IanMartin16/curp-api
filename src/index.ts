@@ -19,6 +19,7 @@ import { liteGuard, liteDailyLimit } from "./middlewares/lite.middleware";
 import metaRouter from "./routes/meta.routes";
 import { rapidApiGate, rapidApiBypassLimit } from "./middlewares/rapidapi.middleware";
 import healthRouter from "./routes/health.routes";
+import validationRoutes from "./routes/validation.routes";
 
 import { initDb } from "./db/initDb";
 
@@ -65,6 +66,7 @@ async function bootstrap() {
   app.use("/api", dashboardRoutes);
   app.use("/api", dashboardRouter);
   app.use("/api", freeKeyRoutes);
+  app.use("/api/v1", validationRoutes);
 
 
   // (Opcional) requestLogger para debug
