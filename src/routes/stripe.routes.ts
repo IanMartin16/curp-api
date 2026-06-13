@@ -256,27 +256,29 @@ router.post("/stripe/sync-subscription", async (req, res) => {
                 
               stripe_cancel_at = CASE
                 WHEN $6::BIGINT IS NOT NULL
-                  THEN to_timestamp($6)
+                  THEN to_timestamp($6::BIGINT)
                 ELSE stripe_cancel_at
               END,
               
               current_period_end = CASE
-                WHEN $6::BIGINT IS NOT NULL
-                  THEN to_timestamp($7)
+                WHEN $7::BIGINT IS NOT NULL
+                  THEN to_timestamp($7::BIGINT)
                 ELSE current_period_end
               END,    
 
               access_ends_at = CASE
-                WHEN $5::BIGINT IS NOT NULL
-                  THEN to_timestamp($5)
+                WHEN $8::BIGINT IS NOT NULL
+                  THEN to_timestamp($8::BIGINT)
+                WHEN $5::BOOLEAN = false
+                  THEN NULL  
                 ELSE access_ends_at
               END,
 
               stripe_price_id =
-                COALESCE($6, stripe_price_id),
+                COALESCE($9::TEXT, stripe_price_id),
 
               stripe_product_id =
-                COALESCE($7, stripe_product_id),
+                COALESCE($10::TEXT, stripe_product_id),
 
               updated_at = NOW()
           WHERE stripe_subscription_id = $1
