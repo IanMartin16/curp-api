@@ -116,5 +116,34 @@ await pool.query(`
       PRIMARY KEY (day, ip_hash)
     );
   `);
-}
 
+  await pool.query(`
+  ALTER TABLE api_keys
+  ADD COLUMN IF NOT EXISTS subscription_status TEXT;
+`);
+
+await pool.query(`
+  ALTER TABLE api_keys
+  ADD COLUMN IF NOT EXISTS cancel_at_period_end BOOLEAN NOT NULL DEFAULT false;
+`);
+
+await pool.query(`
+  ALTER TABLE api_keys
+  ADD COLUMN IF NOT EXISTS access_ends_at TIMESTAMPTZ;
+`);
+
+await pool.query(`
+  ALTER TABLE api_keys
+  ADD COLUMN IF NOT EXISTS stripe_price_id TEXT;
+`);
+
+await pool.query(`
+  ALTER TABLE api_keys
+  ADD COLUMN IF NOT EXISTS stripe_product_id TEXT;
+`);
+
+await pool.query(`
+  ALTER TABLE api_keys
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+`);
+}

@@ -69,17 +69,67 @@ export async function createApiKey(input: {
 
 // ✅ Revocar key (soft delete)
 export async function revokeApiKey(id: string): Promise<boolean> {
-  const r = await pool.query(
+  const result = await pool.query(
     `
     UPDATE api_keys
-    SET active = false, revoked_at = now()
+    SET active = false, 
+        revoked_at = COALESCE(revoke_at, NOW())
     WHERE id = $1
+      AND active = true
     RETURNING id
     `,
     [id]
   );
 
-  return r.rowCount > 0;
+  return (result.rowCount ?? 0) > 0;
+}
+
+// Revocación proveniente de Stripe
+export async function revokeApiKeyBySubscriptionId(
+  subscriptionId: string
+): Promise<boolean> {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const result = await client.query(
+      `
+        UPDATE api_keys
+        SET active = false,
+            revoked_at = COALESCE(revoked_at, NOW())
+        WHERE stripe_subscription_id = $1
+          AND active = true
+        RETURNING id, key
+      `,
+      [subscriptionId]
+    );
+
+    if (!result.rowCount) {
+      await client.query("ROLLBACK");
+      return false;
+    }
+
+    for (const row of result.rows) {
+      await client.query(
+        `
+          UPDATE dashboard_sessions
+          SET revoked_at = COALESCE(revoked_at, NOW())
+          WHERE api_key = $1
+            AND revoked_at IS NULL
+        `,
+        [row.key]
+      );
+    }
+
+    await client.query("COMMIT");
+    return true;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 // ✅ Validación rápida (para tu middleware)

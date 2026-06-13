@@ -2,6 +2,15 @@ import { Router } from "express";
 import { pool } from "../db";
 import crypto from "crypto";
 
+type SyncSubscriptionBody = {
+  subscriptionId?: string | null;
+  status?: string | null;
+  cancelAtPeriodEnd?: boolean;
+  currentPeriodEnd?: number | null;
+  priceId?: string | null;
+  productId?: string | null;
+};
+
 const router = Router();
 const INTERNAL_SECRET = process.env.INTERNAL_WEBHOOK_SECRET || "";
 
@@ -35,8 +44,17 @@ router.post("/stripe/fulfill", async (req, res) => {
       return res.status(400).json({ ok: false, error: "Missing plan, subscriptionId or sessionId" });
     }
 
+    const VALID_PLANS = new Set(["developer", "business"]);
+
+    if(!plan || !VALID_PLANS.has(plan)) {
+      return res.status(400).json({
+        ok: false,
+        error: "invalid or missing plan",
+      });
+    }
+
     const existing = await pool.query(
-      `SELECT id, key, plan, active, shown_at, key_masked
+      `SELECT id, key_masked, label, plan, active, shown_at, revoked_at, stripe_subscription_id
        FROM api_keys
        WHERE stripe_subscription_id = $1
        LIMIT 1`,
@@ -44,7 +62,17 @@ router.post("/stripe/fulfill", async (req, res) => {
     );
 
     if (existing.rowCount) {
-      return res.json({ ok: true, key: existing.rows[0], existing: true });
+      const existingKey = existing.row[0];
+
+      if(!existingKey.active){
+        return res.status(409).json({
+          ok : false,
+          error: "API key for this subscription is revoked",
+          key: existingKey,
+          existing:true,
+        });
+      }
+      return res.json({ ok: true, key: existingKey, existing: true });
     }
 
     const newKey = genKey();
@@ -155,14 +183,21 @@ export default router;
 router.post("/stripe/sync-subscription", async (req, res) => {
   try {
     const secret = req.header("x-internal-secret") || "";
+
     if (!INTERNAL_SECRET || secret !== INTERNAL_SECRET) {
-      return res.status(401).json({ ok: false, error: "Unauthorized" });
+      return res.status(401).json({
+        ok: false,
+        error: "Unauthorized",
+      });
     }
 
-    const { subscriptionId, status } = req.body as {
-      subscriptionId?: string | null;
-      status?: string | null;
-    };
+    const { subscriptionId, status, 
+      cancelAtPeriodEnd = false,
+      currentPeriodEnd = null,
+      priceId = null,
+      productId = null,
+     } = req.body as SyncSubscriptionBody;
+
 
     if (!subscriptionId || !status) {
       return res.status(400).json({
@@ -180,45 +215,126 @@ router.post("/stripe/sync-subscription", async (req, res) => {
       "paused",
     ]);
 
-    let active: boolean | null = null;
-
-    if (activeStatuses.has(status)) active = true;
-    if (inactiveStatuses.has(status)) active = false;
-
-    if (active === null) {
+    if (
+      !activeStatuses.has(status) &&
+      !inactiveStatuses.has(status)
+    ) {
       return res.status(400).json({
         ok: false,
         error: `Unsupported subscription status: ${status}`,
       });
     }
 
-    const upd = await pool.query(
-      `UPDATE api_keys
-         SET active = $2,
-             revoked_at = CASE WHEN $2 = false THEN NOW() ELSE NULL END
-       WHERE stripe_subscription_id = $1
-       RETURNING id, key_masked, label, plan, active, revoked_at`,
-      [subscriptionId, active]
-    );
+    const shouldBeActive = activeStatuses.has(status);
+    const client = await pool.connect();
 
-    if (!upd.rowCount) {
-      return res.status(404).json({
-        ok: false,
-        error: "No api_key found for subscriptionId",
+    try {
+      await client.query("BEGIN");
+
+      const updated = await client.query(
+        `
+          UPDATE api_keys
+          SET active = $2,
+              revoked_at = CASE
+                WHEN $2 = false
+                  THEN COALESCE(revoked_at, NOW())
+                ELSE NULL
+              END
+              subscription_status = $3,
+              cancel_at_period_end = $4,
+              access_ends_at = CASE
+                WHEN $5::BIGINT IS NOT NULL
+                   THEN to_timestamp($5)
+                ELSE access_ends_at
+              END,
+              stripe_price_id = COALESCE($6, stripe_price-id),
+              stripe_product_id = COALESCE($7, stripe_product_id),
+              updated_at = NOW()     
+          WHERE stripe_subscription_id = $1
+          RETURNING
+            id,
+            key,
+            key_masked,
+            label,
+            plan,
+            active,
+            revoked_at,
+            subscription_status,
+            cancel_at_period_end,
+            access_ends_at,
+            stripe_price_id,
+            stripe_product_id
+        `,
+        [subscriptionId, shouldBeActive, status, cancelAtPeriodEnd, currentPeriodEnd, priceId, productId]
+      );
+
+      if (!updated.rowCount) {
+        await client.query("ROLLBACK");
+
+        console.error("stripe_subscription_sync_key_not_found", {
+          subscriptionId,
+          status,
+        });
+
+        return res.status(404).json({
+          ok: false,
+          error: "No api_key found for subscriptionId",
+        });
+      }
+
+      if (!shouldBeActive) {
+        for (const row of updated.rows) {
+          await client.query(
+            `
+              UPDATE dashboard_sessions
+              SET revoked_at = COALESCE(revoked_at, NOW())
+              WHERE api_key = $1
+                AND revoked_at IS NULL
+            `,
+            [row.key]
+          );
+        }
+      }
+
+      await client.query("COMMIT");
+
+      const key = updated.rows[0];
+
+      console.info("stripe_subscription_sync_completed", {
+        subscriptionId,
+        status,
+        active: shouldBeActive,
+        apiKeyId: key.id,
       });
-    }
 
-    return res.json({
-      ok: true,
-      subscriptionId,
-      status,
-      active,
-      key: upd.rows[0],
+      return res.json({
+        ok: true,
+        subscriptionId,
+        status,
+        active: shouldBeActive,
+        key: {
+          id: key.id,
+          key_masked: key.key_masked,
+          label: key.label,
+          plan: key.plan,
+          active: key.active,
+          revoked_at: key.revoked_at,
+        },
+      });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
+  } catch (error: any) {
+    console.error("stripe_subscription_sync_failed", {
+      error: error?.message || "Unknown error",
     });
-  } catch (e: any) {
+
     return res.status(500).json({
       ok: false,
-      error: e?.message || "Error",
+      error: error?.message || "Error",
     });
   }
 });
