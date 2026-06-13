@@ -6,7 +6,10 @@ type SyncSubscriptionBody = {
   subscriptionId?: string | null;
   status?: string | null;
   cancelAtPeriodEnd?: boolean;
+  scheduledCancellation?: boolean | null;
+  cancelAt?: number | null;
   currentPeriodEnd?: number | null;
+  accessEndsAt?: number | null;
   priceId?: string | null;
   productId?: string | null;
 };
@@ -193,7 +196,10 @@ router.post("/stripe/sync-subscription", async (req, res) => {
 
     const { subscriptionId, status, 
       cancelAtPeriodEnd = false,
+      scheduledCancellation = null,
+      cancelAt = null,
       currentPeriodEnd = null,
+      accessEndsAt = null,
       priceId = null,
       productId = null,
      } = req.body as SyncSubscriptionBody;
@@ -241,17 +247,37 @@ router.post("/stripe/sync-subscription", async (req, res) => {
                 ELSE revoked_at
               END,
               subscription_status = $3,
+
               cancel_at_period_end =
                 COALESCE($4::BOOLEAN, cancel_at_period_end),
+
+              cancellation_scheduled = 
+                COALESCE($5::BOOLEAN, cancellation_scheduled),
+                
+              stripe_cancel_at = CASE
+                WHEN $6::BIGINT IS NOT NULL
+                  THEN to_timestamp($6)
+                ELSE stripe_cancel_at
+              END,
+              
+              current_period_end = CASE
+                WHEN $6::BIGINT IS NOT NULL
+                  THEN to_timestamp($7)
+                ELSE current_period_end
+              END,    
+
               access_ends_at = CASE
                 WHEN $5::BIGINT IS NOT NULL
                   THEN to_timestamp($5)
                 ELSE access_ends_at
               END,
+
               stripe_price_id =
                 COALESCE($6, stripe_price_id),
+
               stripe_product_id =
                 COALESCE($7, stripe_product_id),
+
               updated_at = NOW()
           WHERE stripe_subscription_id = $1
           RETURNING
@@ -264,6 +290,9 @@ router.post("/stripe/sync-subscription", async (req, res) => {
             revoked_at,
             subscription_status,
             cancel_at_period_end,
+            cancellation_scheduled,
+            stripe_cancel_at,
+            current_period_end,
             access_ends_at,
             stripe_price_id,
             stripe_product_id,
@@ -274,7 +303,10 @@ router.post("/stripe/sync-subscription", async (req, res) => {
           shouldBeActive,
           status,
           cancelAtPeriodEnd,
+          scheduledCancellation,
+          cancelAt,
           currentPeriodEnd,
+          accessEndsAt,
           priceId,
           productId,
         ]

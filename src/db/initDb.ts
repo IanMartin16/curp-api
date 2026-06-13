@@ -146,4 +146,19 @@ await pool.query(`
   ALTER TABLE api_keys
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 `);
+
+await pool.query(`
+  ALTER TABLE api_keys
+  ADD COLUMN IF NOT EXISTS cancellation_scheduled BOOLEAN NOT NULL DEFAULT false;
+`);
+
+await pool.query(`
+  ALTER TABLE api_keys
+  ADD COLUMN IF NOT EXISTS stripe_cancel_at TIMESTAMPTZ;
+`);
+
+await pool.query(`
+  ALTER TABLE api_keys
+  ADD COLUMN IF NOT EXISTS current_period_end TIMESTAMPTZ;
+`);
 }
