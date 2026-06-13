@@ -91,8 +91,19 @@ router.post("/stripe/fulfill", async (req, res) => {
 );
 
     return res.status(201).json({ ok: true, key: ins.rows[0], existing: false });
-  } catch (e: any) {
-    return res.status(500).json({ ok: false, error: e?.message || "Error" });
+      } catch (e: any) {
+        console.error("stripe_fulfill_failed", {
+          message: e?.message,
+          code: e?.code,
+          detail: e?.detail,
+          constraint: e?.constraint,
+          stack: e?.stack,
+      });
+
+    return res.status(500).json({
+      ok: false,
+      error: e?.message || "Error",
+    });
   }
 });
 
