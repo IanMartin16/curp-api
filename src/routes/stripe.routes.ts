@@ -238,18 +238,21 @@ router.post("/stripe/sync-subscription", async (req, res) => {
               revoked_at = CASE
                 WHEN $2 = false
                   THEN COALESCE(revoked_at, NOW())
-                ELSE NULL
-              END
+                ELSE revoked_at
+              END,
               subscription_status = $3,
-              cancel_at_period_end = $4,
+              cancel_at_period_end =
+                COALESCE($4::BOOLEAN, cancel_at_period_end),
               access_ends_at = CASE
                 WHEN $5::BIGINT IS NOT NULL
-                   THEN to_timestamp($5)
+                  THEN to_timestamp($5)
                 ELSE access_ends_at
               END,
-              stripe_price_id = COALESCE($6, stripe_price-id),
-              stripe_product_id = COALESCE($7, stripe_product_id),
-              updated_at = NOW()     
+              stripe_price_id =
+                COALESCE($6, stripe_price_id),
+              stripe_product_id =
+                COALESCE($7, stripe_product_id),
+              updated_at = NOW()
           WHERE stripe_subscription_id = $1
           RETURNING
             id,
@@ -263,9 +266,18 @@ router.post("/stripe/sync-subscription", async (req, res) => {
             cancel_at_period_end,
             access_ends_at,
             stripe_price_id,
-            stripe_product_id
-        `,
-        [subscriptionId, shouldBeActive, status, cancelAtPeriodEnd, currentPeriodEnd, priceId, productId]
+            stripe_product_id,
+            updated_at
+          `,
+        [
+          subscriptionId,
+          shouldBeActive,
+          status,
+          cancelAtPeriodEnd,
+          currentPeriodEnd,
+          priceId,
+          productId,
+        ]
       );
 
       if (!updated.rowCount) {
