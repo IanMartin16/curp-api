@@ -31,78 +31,192 @@ function maskKey(k: string) {
 router.post("/stripe/fulfill", async (req, res) => {
   try {
     const secret = req.header("x-internal-secret") || "";
+
     if (!INTERNAL_SECRET || secret !== INTERNAL_SECRET) {
-      return res.status(401).json({ ok: false, error: "Unauthorized" });
+      return res.status(401).json({
+        ok: false,
+        error: "Unauthorized",
+      });
     }
 
-    const { plan, email, customerId, subscriptionId, sessionId } = req.body as {
-      plan?: "developer" | "business";
+    const {
+      plan,
+      email,
+      customerId,
+      subscriptionId,
+      sessionId,
+    } = req.body as {
+      plan?: string;
       email?: string | null;
       customerId?: string | null;
       subscriptionId?: string | null;
       sessionId?: string | null;
     };
 
-    if (!plan || !subscriptionId || !sessionId) {
-      return res.status(400).json({ ok: false, error: "Missing plan, subscriptionId or sessionId" });
-    }
+    const validPlans = new Set(["developer", "business"]);
 
-    const VALID_PLANS = new Set(["developer", "business"]);
-
-    if(!plan || !VALID_PLANS.has(plan)) {
+    if (!plan || !validPlans.has(plan)) {
       return res.status(400).json({
         ok: false,
-        error: "invalid or missing plan",
+        error: "Invalid or missing plan",
       });
     }
 
-    const existing = await pool.query(
-      `SELECT id, key_masked, label, plan, active, shown_at, revoked_at, stripe_subscription_id
-       FROM api_keys
-       WHERE stripe_subscription_id = $1
-       LIMIT 1`,
-      [subscriptionId]
-    );
-
-    if (existing.rowCount) {
-      const existingKey = existing.row[0];
-
-      if(!existingKey.active){
-        return res.status(409).json({
-          ok : false,
-          error: "API key for this subscription is revoked",
-          key: existingKey,
-          existing:true,
-        });
-      }
-      return res.json({ ok: true, key: existingKey, existing: true });
+    if (!subscriptionId || !sessionId) {
+      return res.status(400).json({
+        ok: false,
+        error: "Missing subscriptionId or sessionId",
+      });
     }
 
     const newKey = genKey();
-    const label = email ? `stripe:${email}` : "stripe";
-    const masked = maskKey(newKey);
     const newId = crypto.randomUUID();
+    const masked = maskKey(newKey);
+    const label = email ? `stripe:${email}` : "stripe";
 
-    const ins = await pool.query(
-  `INSERT INTO api_keys (id, key, key_masked, label, plan, active, stripe_customer_id, stripe_subscription_id, stripe_session_id)
-   VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8)
-   RETURNING id, key_masked, label, plan, active, revoked_at`,
-  [newId, newKey, masked, label, plan, customerId, subscriptionId, sessionId]
-);
+    /*
+     * Inserción atómica:
+     * si webhook y success page llegan juntos,
+     * solo una llamada crea la key.
+     */
+    const inserted = await pool.query(
+      `
+        INSERT INTO api_keys (
+          id,
+          key,
+          key_masked,
+          label,
+          plan,
+          active,
+          stripe_customer_id,
+          stripe_subscription_id,
+          stripe_session_id
+        )
+        VALUES (
+          $1,
+          $2,
+          $3,
+          $4,
+          $5,
+          true,
+          $6,
+          $7,
+          $8
+        )
+        ON CONFLICT (stripe_subscription_id)
+        WHERE stripe_subscription_id IS NOT NULL
+        DO NOTHING
+        RETURNING
+          id,
+          key_masked,
+          label,
+          plan,
+          active,
+          shown_at,
+          revoked_at,
+          stripe_subscription_id,
+          stripe_session_id
+      `,
+      [
+        newId,
+        newKey,
+        masked,
+        label,
+        plan,
+        customerId ?? null,
+        subscriptionId,
+        sessionId,
+      ]
+    );
 
-    return res.status(201).json({ ok: true, key: ins.rows[0], existing: false });
-      } catch (e: any) {
-        console.error("stripe_fulfill_failed", {
-          message: e?.message,
-          code: e?.code,
-          detail: e?.detail,
-          constraint: e?.constraint,
-          stack: e?.stack,
+    const createdRow = inserted.rows?.[0] ?? null;
+
+    if (createdRow) {
+      console.info("stripe_fulfill_key_created", {
+        apiKeyId: createdRow.id,
+        subscriptionId,
+        sessionId,
+        plan,
       });
+
+      return res.status(201).json({
+        ok: true,
+        key: createdRow,
+        existing: false,
+      });
+    }
+
+    /*
+     * Si no insertó, la suscripción ya tiene una key.
+     */
+    const existing = await pool.query(
+      `
+        SELECT
+          id,
+          key_masked,
+          label,
+          plan,
+          active,
+          shown_at,
+          revoked_at,
+          stripe_subscription_id,
+          stripe_session_id
+        FROM api_keys
+        WHERE stripe_subscription_id = $1
+        LIMIT 1
+      `,
+      [subscriptionId]
+    );
+
+    const existingKey = existing.rows?.[0] ?? null;
+
+    if (!existingKey) {
+      console.error("stripe_fulfill_existing_key_missing", {
+        subscriptionId,
+        sessionId,
+        insertedRowCount: inserted.rowCount,
+      });
+
+      return res.status(409).json({
+        ok: false,
+        error:
+          "Subscription already exists but its API key could not be retrieved",
+      });
+    }
+
+    if (!existingKey.active || existingKey.revoked_at) {
+      return res.status(409).json({
+        ok: false,
+        error: "API key for this subscription is revoked",
+        existing: true,
+        key: existingKey,
+      });
+    }
+
+    console.info("stripe_fulfill_existing_key_found", {
+      apiKeyId: existingKey.id,
+      subscriptionId,
+      sessionId,
+      plan: existingKey.plan,
+    });
+
+    return res.status(200).json({
+      ok: true,
+      key: existingKey,
+      existing: true,
+    });
+  } catch (error: any) {
+    console.error("stripe_fulfill_failed", {
+      message: error?.message,
+      code: error?.code,
+      detail: error?.detail,
+      constraint: error?.constraint,
+      stack: error?.stack,
+    });
 
     return res.status(500).json({
       ok: false,
-      error: e?.message || "Error",
+      error: error?.message || "Error",
     });
   }
 });
