@@ -277,31 +277,64 @@ router.get("/stripe/reveal-once", async (req, res) => {
 });
 
 // ✅ customer-by-key (para portal)
-router.get("/stripe/customer-by-key", async (req, res) => {
+router.post("/stripe/customer-by-key", async (req, res) => {
   try {
     const secret = req.header("x-internal-secret") || "";
+
     if (!INTERNAL_SECRET || secret !== INTERNAL_SECRET) {
-      return res.status(401).json({ ok: false, error: "Unauthorized" });
+      return res.status(401).json({
+        ok: false,
+        error: "Unauthorized",
+      });
     }
 
-    const apiKey = String(req.query.api_key || "");
-    if (!apiKey) return res.status(400).json({ ok: false, error: "Missing api_key" });
+    const apiKey =
+      typeof req.body?.apiKey === "string"
+        ? req.body.apiKey.trim()
+        : "";
 
-    const q = await pool.query(
-      `SELECT stripe_customer_id
-       FROM api_keys
-       WHERE key = $1
-       LIMIT 1`,
+    if (!apiKey) {
+      return res.status(400).json({
+        ok: false,
+        error: "Missing apiKey",
+      });
+    }
+
+    const result = await pool.query(
+      `
+        SELECT stripe_customer_id
+        FROM api_keys
+        WHERE key = $1
+          AND active = true
+          AND revoked_at IS NULL
+        LIMIT 1
+      `,
       [apiKey]
     );
 
-    if (!q.rowCount || !q.rows[0].stripe_customer_id) {
-      return res.status(404).json({ ok: false, error: "No customer for key" });
+    const row = result.rows?.[0] ?? null;
+
+    if (!row?.stripe_customer_id) {
+      return res.status(404).json({
+        ok: false,
+        error: "No active customer for key",
+      });
     }
 
-    return res.json({ ok: true, customerId: q.rows[0].stripe_customer_id });
-  } catch (e: any) {
-    return res.status(500).json({ ok: false, error: e?.message || "Error" });
+    return res.json({
+      ok: true,
+      customerId: row.stripe_customer_id,
+    });
+  } catch (error: any) {
+    console.error("stripe_customer_by_key_failed", {
+      message: error?.message,
+      stack: error?.stack,
+    });
+
+    return res.status(500).json({
+      ok: false,
+      error: error?.message || "Error",
+    });
   }
 });
 
